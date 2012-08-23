@@ -1488,7 +1488,7 @@ public class BinderImpl implements Binder,BinderCtrl,Serializable{
 	}
 	
 	
-	private void doExecute(Component comp, String command, Map<String, Object> commandArgs, BindContext ctx, Set<Property> notifys) {
+	protected void doExecute(Component comp, String command, Map<String, Object> commandArgs, BindContext ctx, Set<Property> notifys) {
 		try {
 			if(_log.debugable()){
 				_log.debug("before doExecute comp=[%s],command=[%s],notifys=[%s]",comp,command,notifys);
