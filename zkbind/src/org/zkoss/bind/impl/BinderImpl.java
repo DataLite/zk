@@ -2015,5 +2015,43 @@ public class BinderImpl implements Binder,BinderCtrl,Serializable{
 			BinderImpl.this.didActivate();
 		}	
 	}
+        
+        /** Method allowing to load a specific binding */
+        protected void loadBinding( Component component, BindingKey binding ) {
+            _propertyBindingHandler.doLoad( component, binding );
+        }
+
+        /** Method to save any binding on the component */
+        protected void saveBinding( Component component, BindingKey binding ) {
+            _propertyBindingHandler.doSaveEvent( binding, component, new Event( "ON_SAVE" ), Collections.<Property>emptySet() );
+        }
+        
+        /** Saves all bindings bound to the component */
+        protected void saveAllBindings( Component component ) {
+            for ( final Entry<BindingKey, List<SavePropertyBinding>> bindings : _propertyBindingHandler.getSaveEventBindings().entrySet() ) {
+                for ( SavePropertyBinding binding  : bindings.getValue() ) {
+                    // test whether the component is a child of given component. If not, skip
+                    if ( ! isAncestorOf( component, binding.getComponent() ) ) continue;
+                    // refresh binding
+                    final BindContext ctx = BindContextUtil.newBindContext( this, binding, false, null, component, null );
+                    BindContextUtil.setConverterArgs( this, component, ctx, binding );
+                    binding.save( ctx );
+                }
+            }
+        }
+        
+        /** determines whether the component is the ancestor of the given one */
+        protected boolean isAncestorOf( Component ancestor, Component descendant ) {
+        Component parent = descendant;
+        // while has parent
+        while ( parent != null ) {
+            // test if the parent is the ancestor
+            if ( ancestor.equals( parent ) ) return true;
+            // move up
+            parent = parent.getParent();
+        }
+        // component is not the descendant of the given potential ancestor
+        return false;
+    }
 
 }
