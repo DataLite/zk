@@ -25,7 +25,7 @@ public class PropertyImpl implements Property,Serializable {
 	private static final long serialVersionUID = 1463169907348730644L;
 	private final Object _base;
 	private final String _property;
-	private final Object _value;
+	private       Object _value;
 	public PropertyImpl(Object base, String property, Object value) {
 		_base = base;
 		_property = property;
@@ -43,6 +43,10 @@ public class PropertyImpl implements Property,Serializable {
 	public String getProperty() {
 		return _property;
 	}
+	
+        public void setValue( Object value ) {
+            _value = value;
+        }
 	
 	public String toString(){
 		return new StringBuilder().append(getClass().getSimpleName()).append("@").append(Integer.toHexString(hashCode()))
