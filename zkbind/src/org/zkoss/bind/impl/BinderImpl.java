@@ -67,6 +67,7 @@ import org.zkoss.lang.reflect.Fields;
 import org.zkoss.util.CacheMap;
 import org.zkoss.util.logging.Log;
 import org.zkoss.xel.ExpressionX;
+import org.zkoss.zel.PropertyNotFoundException;
 import org.zkoss.zk.ui.AbstractComponent;
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.Desktop;
@@ -2018,40 +2019,62 @@ public class BinderImpl implements Binder,BinderCtrl,Serializable{
         
         /** Method allowing to load a specific binding */
         protected void loadBinding( Component component, BindingKey binding ) {
-            _propertyBindingHandler.doLoad( component, binding );
+            try {
+                _propertyBindingHandler.doLoad( component, binding );
+            } catch ( PropertyNotFoundException ignored ) {
+                // binding is not appliable, drop it
+            }
         }
 
         /** Method to save any binding on the component */
-        protected void saveBinding( Component component, BindingKey binding ) {
-            _propertyBindingHandler.doSaveEvent( binding, component, new Event( "ON_SAVE" ), Collections.<Property>emptySet() );
-        }
-        
-        /** Saves all bindings bound to the component */
-        protected void saveAllBindings( Component component ) {
-            for ( final Entry<BindingKey, List<SavePropertyBinding>> bindings : _propertyBindingHandler.getSaveEventBindings().entrySet() ) {
-                for ( SavePropertyBinding binding  : bindings.getValue() ) {
-                    // test whether the component is a child of given component. If not, skip
-                    if ( ! isAncestorOf( component, binding.getComponent() ) ) continue;
-                    // refresh binding
-                    final BindContext ctx = BindContextUtil.newBindContext( this, binding, false, null, component, null );
-                    BindContextUtil.setConverterArgs( this, component, ctx, binding );
-                    binding.save( ctx );
-                }
+        protected boolean saveBinding( Component component, BindingKey binding ) {
+            try {
+                return _propertyBindingHandler.doSaveEvent( binding, component, new Event( "ON_SAVE" ), new LinkedHashSet<Property>() );
+            } catch ( PropertyNotFoundException ignored ) {
+                // binding is not appliable, drop it
+                return true;
             }
         }
         
+        /** Saves all bindings bound to the component */
+        protected boolean saveAllBindings( Component component ) {
+            // validation flag
+            boolean success = true;
+
+            // get all bindings
+            Set<Entry<BindingKey, List<SavePropertyBinding>>> allBindings = _propertyBindingHandler.getSaveEventBindings().entrySet();
+
+            for ( final Entry<BindingKey, List<SavePropertyBinding>> bindings : allBindings ) {
+
+                // nothing to save, drop it
+                if ( bindings.getValue().isEmpty() ) continue;
+
+                // binding component, the key is bound to
+                Component bindTo = bindings.getValue().get( 0 ).getComponent();
+
+                // test whether the component is a child of given component. If not, skip
+                if ( !isAncestorOf( component, bindTo ) ) continue;
+
+                // save binding
+                success &= saveBinding( bindTo, bindings.getKey() );
+            }
+
+            // return whether or not all bindings was successfully saved
+            return success;
+        }
+
         /** determines whether the component is the ancestor of the given one */
         protected boolean isAncestorOf( Component ancestor, Component descendant ) {
-        Component parent = descendant;
-        // while has parent
-        while ( parent != null ) {
-            // test if the parent is the ancestor
-            if ( ancestor.equals( parent ) ) return true;
-            // move up
-            parent = parent.getParent();
+            Component parent = descendant;
+            // while has parent
+            while ( parent != null ) {
+                // test if the parent is the ancestor
+                if ( ancestor.equals( parent ) ) return true;
+                // move up
+                parent = parent.getParent();
+            }
+            // component is not the descendant of the given potential ancestor
+            return false;
         }
-        // component is not the descendant of the given potential ancestor
-        return false;
-    }
 
 }

@@ -25,6 +25,7 @@ public class PropertyImpl implements Property,Serializable {
 	private static final long serialVersionUID = 1463169907348730644L;
 	private final Object _base;
 	private final String _property;
+        // removed final modifier to allow to change the value during the validation process
 	private       Object _value;
 	public PropertyImpl(Object base, String property, Object value) {
 		_base = base;
