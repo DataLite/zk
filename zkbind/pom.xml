@@ -5,7 +5,7 @@
 	<groupId>org.zkoss.zk</groupId>
 	<artifactId>zkbind</artifactId>
 	<packaging>jar</packaging>
-	<version>6.5.0.1-DATALITE</version>
+	<version>6.5.2.1-DATALITE</version>
 	<name>ZK Bind</name>
 	<url>http://www.zkoss.org/zkbind</url>
 	<description>ZK Bind</description>
@@ -82,7 +82,7 @@
 		<dependency>
 			<groupId>org.zkoss.zk</groupId>
 			<artifactId>zul</artifactId>
-			<version>${project.version}</version>
+			<version>6.5.2</version>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
@@ -137,6 +137,33 @@
 					<target>1.5</target>
 				</configuration>
 			</plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.2.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                            <goal>test-jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>2.9</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
 		</plugins>
 	</build>
 </project> 

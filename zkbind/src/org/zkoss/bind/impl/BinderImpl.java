@@ -2381,6 +2381,14 @@ public class BinderImpl implements Binder,BinderCtrl,Serializable{
         return false;
     }
 
+    /**
+     * Make the method accessible for DLBinder.
+     */
+    protected Method getCommandMethod(Class<?> clz, String command)
+    {
+        return getCommandMethod(clz, command, _commandMethodInfoProvider, _commandMethodCache);
+    }
+
 	
 	public BindingExecutionInfoCollector getBindingExecutionInfoCollector(){
 		DebuggerFactory factory = DebuggerFactory.getInstance();
