@@ -33,6 +33,7 @@ import org.zkoss.io.Files;
 import org.zkoss.zk.mesg.MZk;
 import org.zkoss.zk.ui.Execution;
 import org.zkoss.zk.ui.UiException;
+import org.zkoss.zk.ui.WebApps;
 
 /**
  * A manager of devices ({@link Device}).
@@ -151,7 +152,7 @@ public class Devices {
 
 	/** Adds a device type.
 	 *
-	 * @param deviceType the device type (aka., the device name).
+	 * @param deviceType the device type (a.k.a., the device name).
 	 * @param clsnm the device class name
 	 * @return the previous class of the device with the same type, if any,
 	 * or null if no such device.
@@ -161,7 +162,7 @@ public class Devices {
 	}
 	/** Adds a device type.
 	 *
-	 * @param deviceType the device type (aka., the device name).
+	 * @param deviceType the device type (a.k.a., the device name).
 	 * @param cls the device class
 	 * @return the previous class of the device with the same type, if any,
 	 * or null if no such device.
@@ -347,7 +348,7 @@ public class Devices {
 		}
 	}
 
-	/** Returns the name and version of th client if the givent user agent
+	/** Returns the name and version of the client if the given user agent
 	 * matches any of the devices, or null if not matched or it is a standard
 	 * browser request.
 	 * <p>It iterates all devices and invokes {@link Device#matches} one-by-one,
@@ -381,7 +382,7 @@ public class Devices {
 	 * @param config the XML element called zscript-config
 	 */
 	public static final void add(Element config) {
-		//Spec: it is OK to declare an nonexist device
+		//Spec: it is OK to declare an nonexistent device
 		final String deviceType =
 			IDOMs.getRequiredElementValue(config, "device-type");
 
@@ -409,7 +410,8 @@ public class Devices {
 	public static String loadJavaScript(Execution exec, String path)
 	throws IOException {
 		path = exec.locate(path);
-		InputStream is = exec.getDesktop().getWebApp().getResourceAsStream(path);
+		//ZK-1345: use WebApps.getCurrent() instead of exec.getDesktop().getWebApp()
+		InputStream is = WebApps.getCurrent().getResourceAsStream(path);
 		if (is == null)
 			throw new UiException("Unable to load "+path);
 		final byte[] bs = Files.readAll(is);

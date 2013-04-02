@@ -49,6 +49,10 @@ it will be useful, but WITHOUT ANY WARRANTY.
 			 el.style.top = el.offsetTop + "px";
 		if(el.style.left && el.style.left.indexOf("%") >= 0)
 			 el.style.left = el.offsetLeft + "px";
+		
+		//ZK-1309: Add a flag to identify is dragging or not in onFloatUp()
+		//ZK-1662: refix ZK-1309
+		//dg.control._isDragging = true;
 		zWatch.fire('onFloatUp', dg.control); //notify all
 	}
 	function _ghostmove(dg, ofs, evt) {
@@ -81,6 +85,7 @@ it will be useful, but WITHOUT ANY WARRANTY.
 		origin.style.left = jq.px(origin.offsetLeft + el.offsetLeft - dg._wndoffs[0]);
 
 		document.body.style.cursor = "";
+		zWatch.fire('onMove'); //Bug ZK-1372: hide applet when overlapped
 	}
 	function _ignoremove(dg, pointer, evt) {
 		var el = dg.node,
@@ -106,6 +111,10 @@ it will be useful, but WITHOUT ANY WARRANTY.
 	function _aftermove(dg, evt) {
 		dg.node.style.visibility = "";
 		var wgt = dg.control;
+
+		//ZK-1309: Add a flag to identify is dragging or not in onFloatUp()
+		//ZK-1662: refix ZK-1309
+		//delete wgt._isDragging;
 		
 		// Bug for ZK-385 clear position value after move
         if (wgt._position && wgt._position != "parent") {
@@ -121,8 +130,13 @@ it will be useful, but WITHOUT ANY WARRANTY.
 			$n = zk(n);
 		if (!pos && (!n.style.top || !n.style.left)) {
 			var xy = $n.revisedOffset();
-			n.style.left = jq.px(xy[0]);
-			n.style.top = jq.px(xy[1]);
+			//ZK-1391: use revisedOffset() only if style doesn't specify left/top value
+			if (!n.style.left) {
+				n.style.left = jq.px(xy[0]);
+			}
+			if (!n.style.top) {
+				n.style.top = jq.px(xy[1]);
+			}			
 		} else if (pos == "parent")
 			_posByParent(wgt);
 
@@ -213,7 +227,10 @@ it will be useful, but WITHOUT ANY WARRANTY.
 		wgt._notSendMaximize = !opts || !opts.sendOnMaximize;
 		wgt._updDOFocus = false; //it might be set by unbind_
 		try {
+			var last = wgt._lastSize;
 			wgt.rerender(wgt._skipper);
+			if (last)
+				wgt._lastSize = last;
 			var cf;
 			if (cf = wgt._updDOFocus) //asked by unbind_
 				cf.focus(10);
@@ -310,6 +327,23 @@ it will be useful, but WITHOUT ANY WARRANTY.
 
 	function _isModal(mode) {
 		return mode == 'modal' || mode == 'highlighted';
+	}
+	
+	//Bug ZK-1689: get relative position to parent.
+	function _getPosByParent(wgt, left, top) {
+		var pos = wgt._position,
+			left = zk.parseInt(left),
+			top = zk.parseInt(top),
+			x = 0, y = 0;
+		if (pos == 'parent') {
+			var vp = zk(wgt.$n()).vparentNode();
+			if (vp) {
+				var ofs = zk(vp).revisedOffset();
+				x = ofs[0];
+				y = ofs[1];
+			}
+		}
+		return [jq.px(left - x), jq.px(top - y)];
 	}
 
 var Window =
@@ -554,15 +588,17 @@ zul.wnd.Window = zk.$extends(zul.Widget, {
 				if (!fromServer || isRealVisible) {
 					this._visible = true;
 					// B50-ZK-462: Window fire unexpected onMaximize event
-					if (!this._notSendMaximize)
+					if (!this._notSendMaximize) {
+						var p = _getPosByParent(this, l, t); //Bug ZK-1689
 						this.fire('onMaximize', {
-							left: l,
-							top: t,
+							left: p[0],
+							top: p[1],
 							width: w,
 							height: h,
 							maximized: maximized,
 							fromServer: fromServer
 						});
+					}
 				}
 				if (isRealVisible)
 					zUtl.fireSized(this);
@@ -584,7 +620,7 @@ zul.wnd.Window = zk.$extends(zul.Widget, {
 
 			var node = this.$n();
 			if (node) {
-				var s = node.style, l = s.left, t = s.top, w = s.width, h = s.height;
+				var s = node.style;
 				if (minimized) {
 					zWatch.fireDown('onHide', this);
 					jq(node).hide();
@@ -595,9 +631,10 @@ zul.wnd.Window = zk.$extends(zul.Widget, {
 				if (!fromServer) {
 					this._visible = false;
 					this.zsync();
+					var p = _getPosByParent(this, s.left, s.top); //Bug ZK-1689
 					this.fire('onMinimize', {
-						left: s.left,
-						top: s.top,
+						left: p[0],
+						top: p[1],
 						width: s.width,
 						height: s.height,
 						minimized: minimized
@@ -854,7 +891,12 @@ zul.wnd.Window = zk.$extends(zul.Widget, {
 		this.zsync();
 	},
 	onFloatUp: function (ctl) {
-		if (!this._visible || this._mode == 'embedded')
+		/*
+		 * ZK-1309: If window already has mask, ignore onFloatUp routine.
+		 * The reason is prevent zindex of window change(in `setTopmost()`) when dragging,
+		 * it will let full-mask is not visible.
+		 */
+		if (!this._visible || this._mode == 'embedded' || this._mask) 
 			return; //just in case
 
 		var wgt = ctl.origin;
@@ -906,7 +948,7 @@ zul.wnd.Window = zk.$extends(zul.Widget, {
 					zk(n).redoCSS();
 			}
 		} else if (zk.ie == 7) {
-			// B50-ZK-589: Window in Hlayout the title bar is goen in IE7
+			// B50-ZK-589: Window in Hlayout the title bar is gone in IE7
 			// call width() to let browser recalculate
 			var $n = jq(this.$n()),
 				$tl = $n.find('>div:first'),
@@ -955,20 +997,11 @@ zul.wnd.Window = zk.$extends(zul.Widget, {
 	},
 
 	_fireOnMove: function (keys) {
-		var pos = this._position, node = this.$n(),
-			x = zk.parseInt(node.style.left),
-			y = zk.parseInt(node.style.top);
-		if (pos == 'parent') {
-			var vp = zk(node).vparentNode();
-			if (vp) {
-				var ofs = zk(vp).revisedOffset();
-				x -= ofs[0];
-				y -= ofs[1];
-			}
-		}
+		var s = this.$n().style,
+			p = _getPosByParent(this, s.left, s.top); //Bug ZK-1689
 		this.fire('onMove', zk.copy({
-			left: x + 'px',
-			top: y + 'px'
+			left: p[0],
+			top: p[1]
 		}, keys), {ignorable: true});
 
 	},
@@ -1172,21 +1205,24 @@ zul.wnd.Window = zk.$extends(zul.Widget, {
 		var n = evt.domTarget;
 		if (!n.id)
 			n = n.parentNode;
-		switch (n) {
-		case this.$n('close'):
-			this.fire('onClose');
-			break;
-		case this.$n('max'):
-			this.setMaximized(!this._maximized);
-			break;
-		case this.$n('min'):
-			this.setMinimized(!this._minimized);
-			break;
-		default:
-			this.$supers('doClick_', arguments);
-			return;
+		if (n) { //If node does not exist, should propagation event directly
+			switch (n) {
+			case this.$n('close'):
+				this.fire('onClose');
+				break;
+			case this.$n('max'):
+				this.setMaximized(!this._maximized);
+				break;
+			case this.$n('min'):
+				this.setMinimized(!this._minimized);
+				break;
+			default:
+				this.$supers('doClick_', arguments);
+				return;
+			}
+			evt.stop();
 		}
-		evt.stop();
+		this.$supers('doClick_', arguments);
 	},
 	doMouseOver_: function (evt) {
 		var zcls = this.getZclass(),
@@ -1242,6 +1278,11 @@ zul.wnd.Window = zk.$extends(zul.Widget, {
 		this.$supers('afterChildrenFlex_', arguments);
 		if (_isModal(this._mode))
 			_updDomPos(this, true); //force re-position since window width might changed.
+	},
+	//@Override, Bug ZK-1524: caption children should not considered.
+	getChildMinSize_: function (attr, wgt) {
+		if (!wgt.$instanceof(zul.wgt.Caption))
+			return this.$supers('getChildMinSize_', arguments);
 	},
 	setFlexSizeH_: function(n, zkn, height, isFlexMin) {
 		if (isFlexMin) {

@@ -69,6 +69,15 @@ Copyright (C) 2006 Potix Corporation. All Rights Reserved.
 		<repeat-uuid>true</repeat-uuid>
 	</desktop-config>
 	-->
+	
+	<!-- F65-ZK 1465 
+		Turn off smart connection for the comet server push.
+		By default is enable and only HTML5 browser support
+	<library-property>
+		<name>org.zkoss.zkex.ui.comet.smartconnection.disabled</name>
+		<value>true</value>
+	</library-property>
+	-->
 
 	<!-- Turn on the following if you want to use the trendy mold as default
 		for all buttons.
@@ -117,11 +126,11 @@ Copyright (C) 2006 Potix Corporation. All Rights Reserved.
 	</language-config>
 	 -->
 
-	<!-- Turn on if the processing time is longer than 9000 miliseconds.
-		Default: -1 (turned off)
-		http://books.zkoss.org/wiki/ZK_Configuration_Reference/zk.xml/The_client-config_Element#The_resend-delay_Element
+	<!-- Turn on to specify the timeout, in milliseconds, to re-send the AU request
+	 when the server's service unavailable or timeout. (since ZK 6.5.2)
+		http://books.zkoss.org/wiki/ZK_Configuration_Reference/zk.xml/The_client-config_Element#The_auto-resend-timeout_Element
 	<client-config>
-		<resend-delay>9000</resend-delay>
+		<auto-resend-timeout>2000</auto-resend-timeout>
 	</client-config>
 	-->
 
@@ -373,10 +382,13 @@ Copyright (C) 2006 Potix Corporation. All Rights Reserved.
 		<theme-uri>/b**.css</theme-uri>
 	</desktop-config>
 	-->
-	<desktop-config>
-		<theme-provider-class>org.zkoss.zkplus.theme.StandardThemeProvider</theme-provider-class>
-	</desktop-config>
 
+	<!-- Use the customized theme provider
+	<desktop-config>
+		<theme-provider-class>org.zkoss.zul.theme.StandardThemeProvider</theme-provider-class>
+	</desktop-config>
+	-->
+	
 	<!-- Uncomment the following if you want to redirect to particular
 		page when ZK Client receives an error code.
 	<client-config>

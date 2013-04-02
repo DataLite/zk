@@ -31,8 +31,10 @@ zul.wgt.Notification = zk.$extends(zul.wgt.Popup, {
 	redraw: function (out) {
 		var uuid = this.uuid,
 			zcls = this.getZclass();
-		out.push('<div', this.domAttrs_(), '><div id=', uuid, '-p class="', 
-				zcls, '-pointer"></div><div id="', uuid, '-body" class="', 
+		out.push('<div', this.domAttrs_(), '>');
+		if (this._ref) //output arrow if reference exist
+			out.push('<div id=', uuid, '-p class="', zcls, '-pointer"></div>');
+		out.push('<div id="', uuid, '-body" class="', 
 				zcls, '-cl"><div id="', uuid, '-cave" class="', zcls, 
 				'-cnt">', this._msg, '</div>');
 		if (this._closable)
@@ -93,11 +95,11 @@ zul.wgt.Notification = zk.$extends(zul.wgt.Popup, {
 	},
 	open: function (ref, offset, position, opts) {
 		this.$supers(zul.wgt.Notification, 'open', arguments);
-		this._fixarrow(); // TODO: better place for _fixarrow
+		this._fixarrow(ref); //ZK-1583: modify arrow position based on reference component
 	},
 	position: function (ref, offset, position, opts) {
 		this.$supers(zul.wgt.Notification, 'position', arguments);
-		this._fixarrow(); // TODO: better place for _fixarrow
+		this._fixarrow(ref); //ZK-1583: modify arrow position based on reference component
 	},
 	_posInfo: function (ref, offset, position, opts) {
 		this._fixPadding(position);
@@ -108,8 +110,8 @@ zul.wgt.Notification = zk.$extends(zul.wgt.Popup, {
 		if (!p)
 			return;
 		var n = this.$n(),
-			pw = 2 + (zk(p).borderWidth() / 2) | 0,
-			ph = 2 + (zk(p).borderHeight() / 2) | 0;
+			pw = 2 + (zk(p).borderWidth() / 2) || 0,
+			ph = 2 + (zk(p).borderHeight() / 2) || 0;
 		
 		n.style.padding = '0';
 		// cache arrow direction for _fixarrow() later
@@ -162,7 +164,7 @@ zul.wgt.Notification = zk.$extends(zul.wgt.Popup, {
 	_getPaddingSize: function () {
 		return '10px';
 	},
-	_fixarrow: function () {
+	_fixarrow: function (ref) {
 		if (zk.ie == 6)
 			return; // CSS won't work in IE 6, fall back (not showing the triangle)
 		var p = this.$n('p');
@@ -171,21 +173,30 @@ zul.wgt.Notification = zk.$extends(zul.wgt.Popup, {
 		
 		var pzcls = this.getZclass() + '-pointer',
 			n = this.$n(),
+			refn = ref.$n(),
 			dir = this._dir,
-			pw = zk(p).borderWidth(),
-			ph = zk(p).borderHeight();
-		
+			zkp = zk(p),
+			pw = zkp.borderWidth(),
+			ph = zkp.borderHeight(),
+			nOffset = zk(n).cmOffset(),
+			refOffset = zk(refn).cmOffset(),
+			arrXOffset = (refn.offsetWidth - pw) / 2,
+			arrYOffset = (refn.offsetHeight - ph) / 2;
 		if (dir != 'n') {
 			// positioning
 			if (dir == 'u' || dir == 'd') {
-				var b = dir == 'u';
-				p.style.left = ((n.offsetWidth - pw) / 2 | 0) + 'px';
-				p.style[b ? 'top' : 'bottom'] = ((2 - ph / 2) | 0) + 'px';
+				var b = dir == 'u',
+					l1 = (n.offsetWidth - pw) / 2 || 0,
+					l2 = refOffset[0] - nOffset[0] + arrXOffset || 0;
+				p.style.left = (refn.offsetWidth >= n.offsetWidth ? l1 : l2) + 'px'; //ZK-1583: assign arrow position to reference widget if it is large than notification
+				p.style[b ? 'top' : 'bottom'] = ((2 - ph / 2) || 0) + 'px';
 				p.style[b ? 'bottom' : 'top'] = '';
 			} else {
-				var b = dir == 'l';
-				p.style.top = ((n.offsetHeight - ph) / 2 | 0) + 'px';
-				p.style[b ? 'left' : 'right'] = ((2 - pw / 2) | 0) + 'px';
+				var b = dir == 'l',
+					t1 = (n.offsetHeight - ph) / 2 || 0,
+					t2 = refOffset[1] - nOffset[1] + arrYOffset || 0;
+				p.style.top = (refn.offsetHeight >= n.offsetHeight ? t1 : t2) + 'px'; //ZK-1583: assign arrow position to reference widget if it is large than notification
+				p.style[b ? 'left' : 'right'] = ((2 - pw / 2) || 0) + 'px';
 				p.style[b ? 'right' : 'left'] = '';
 			}
 			
@@ -195,7 +206,6 @@ zul.wgt.Notification = zk.$extends(zul.wgt.Popup, {
 		} else {
 			p.className = pzcls;
 			jq(p).hide();
-			
 		}
 	},
 	openAnima_: function (ref, offset, position, opts) {

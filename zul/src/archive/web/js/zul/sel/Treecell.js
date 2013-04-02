@@ -94,11 +94,22 @@ zul.sel.Treecell = zk.$extends(zul.LabelImageWidget, {
 			s2 = this._colHtmlPre();
 		return s1 ? s2 ? s2 + '&nbsp;' + s1: s1: s2;
 	},
+	bind_: function () {
+		this.$supers('bind_', arguments);
+		if (this._clearCache) { // B60-ZK-1348
+			this._clearCache = false;
+			var p;
+			if (p = this.parent) {
+				p.clearCache(); //$n('open')
+			}
+		}
+	},
 	_syncIcon: function () {
 		this.rerender();
 		var p;
-		if (p = this.parent)
-			p.clearCache(); //$n('open')
+		if (p = this.parent) {
+			this._clearCache = true;
+		}
 	},
 	_colHtmlPre: function () {
 		if (this.parent.firstChild == this) {
@@ -177,9 +188,9 @@ zul.sel.Treecell = zk.$extends(zul.LabelImageWidget, {
 			sb.push(iconScls + "-ico ", iconScls, '-', name, '"');
 		}
 		if (button) {
-			var item = this.parent.parent;
-			if (item && item.treerow)
-				sb.push(' id="', item.treerow.uuid, '-open"');
+			var item = this.parent; // B65-ZK-1608, appendChild() will invoke before treeitem._fixOnAdd() 
+			if (item)
+				sb.push(' id="', item.uuid, '-open"');
 		}
 
 		sb.push('></span>');

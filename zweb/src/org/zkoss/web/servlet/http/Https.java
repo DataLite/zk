@@ -19,6 +19,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.IOException;
+import java.net.URLDecoder;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
@@ -280,7 +281,7 @@ public class Https extends Servlets {
 		return sb.toString();
 	}
 	/** Returns the request uri + query string.
-	 * Unlik {@link #getOriginFullServlet}, this is in the encoded form
+	 * Unlike {@link #getOriginFullServlet}, this is in the encoded form
 	 * (e.g., %nn still exists, if any).
 	 * Note: request uri = context path + servlet path + path info.
 	 */
@@ -364,7 +365,7 @@ public class Https extends Servlets {
 	/**
 	 * Converts a date string to a Date instance.
 	 * The format of the giving date string must be complaint
-	 * to HTTP proptocol.
+	 * to HTTP protocol.
 	 *
 	 * @exception ParseException if the string is not valid
 	 */
@@ -395,7 +396,7 @@ public class Https extends Servlets {
 	/** Write the specified media to HTTP response.
 	 *
 	 * @param response the HTTP response to write to
-	 * @param media the content to be writeen
+	 * @param media the content to be written
 	 * @param download whether to cause the download to show at the client.
 	 * If true, it sets the Content-Disposition header.
 	 * @param repeatable whether to use {@link RepeatableInputStream}
@@ -416,7 +417,7 @@ public class Https extends Servlets {
 		final boolean headOnly = "HEAD".equalsIgnoreCase(request.getMethod());
 		final byte[] data;
 		int from = -1, to = -1;
-		synchronized (media) { //Bug 1896797: media might be access concurr.
+		synchronized (media) { //Bug 1896797: media might be accessed concurrently.
 			//reading an image and send it back to client
 			final String ctype = media.getContentType();
 			if (ctype != null)
@@ -424,7 +425,16 @@ public class Https extends Servlets {
 
 			if (download) {
 				String value = "attachment";
-				final String flnm = media.getName();
+				
+				// Bug ZK-1257: Filedownload.save(media, filename) does not save the media as the specified filename
+				StringBuffer temp = request.getRequestURL();
+				final String update_uri = (String)request.getSession().getServletContext().getAttribute("org.zkoss.zk.ui.http.update-uri"); //B65-ZK-1619
+				String flnm = "";
+				if (update_uri != null && temp.toString().contains(update_uri + "/view")) {
+					final String saveAs = URLDecoder.decode(temp.substring(temp.lastIndexOf("/")+1), "UTF-8");
+					flnm = ("".equals(saveAs)) ? media.getName() : saveAs;
+				} else
+					flnm = media.getName();
 				if (flnm != null && flnm.length() > 0)
 					value += ";filename=" + encodeFilename(flnm);
 				response.setHeader("Content-Disposition", value);

@@ -30,11 +30,15 @@ Copyright (C) 2008 Potix Corporation. All Rights Reserved.
 		_initDefault = _portrait[window.orientation]; //default orientation
 	
 	// Checks whether to turn off the progress prompt
-	function checkProgressing(noReq) {
+	function checkProgressing() {
 		if (!zAu.processing()) {
 			_detached = []; //clean up
-			if (!(noReq && zk.mobile && zAu._cInfoReg)) // ignore it when touch devices
+			if (!zk.clientinfo)
 				zk.endProcessing();
+				//setTimeout(zk.endProcessing, 50);
+				// using a timeout to stop the processing after doing onSize in the fireSized() method of the Utl.js
+				//Bug ZK-1505: using timeout cause progress bar disapper such as Thread.sleep(1000) case, so revert it back
+
 			zAu.doneTime = jq.now();
 		}
 	}
@@ -153,8 +157,9 @@ Copyright (C) 2008 Potix Corporation. All Rights Reserved.
 					var v;
 					if ((v = req.getResponseHeader("ZK-Error"))
 					&& !onError(req, v = zk.parseInt(v)||v)
-					&& v == 5501 //Handle only ZK's SC_OUT_OF_SEQUENCE
-					&& zAu.confirmRetry("FAILED_TO_RESPONSE", "out of sequence")) {
+					&& (v == 5501 || v == 5502) //Handle only ZK's SC_OUT_OF_SEQUENCE or SC_ACTIVATION_TIMEOUT
+					&& zAu.confirmRetry("FAILED_TO_RESPONSE",
+							v == 5501 ? "Request out of sequence": "Activation timeout")) {
 						ajaxReqResend(reqInf);
 						return;
 					}
@@ -174,34 +179,43 @@ Copyright (C) 2008 Potix Corporation. All Rights Reserved.
 						zUtl.go(eru);
 						return;
 					}
-
-					//handle MSIE's buggy HTTP status codes
-					//http://msdn2.microsoft.com/en-us/library/aa385465(VS.85).aspx
-					switch (rstatus) { //auto-retry for certain case
-					default:
-						if (!ajaxReqTries) break;
-						//fall thru
-					case 12002: //server timeout
-					case 12030: //http://danweber.blogspot.com/2007/04/ie6-and-error-code-12030.html
-					case 12031:
-					case 12152: // Connection closed by server.
-					case 12159:
-					case 13030:
-					case 503: //service unavailable
-						if (!ajaxReqTries) ajaxReqTries = 3; //two more try
-						if (--ajaxReqTries) {
-							ajaxReqResend(reqInf, 200);
-							return;
-						}
-					}
-
-					if (!reqInf.ignorable && !zk.unloading) {
-						var msg = req.statusText;
-						if (zAu.confirmRetry("FAILED_TO_RESPONSE", rstatus+(msg?": "+msg:""))) {
-							ajaxReqTries = 2; //one more try
-							ajaxReqResend(reqInf);
-							return;
-						}
+                    
+                    if (typeof zAu.ajaxErrorHandler == 'function') {
+                        ajaxReqTries = zAu.ajaxErrorHandler(req, rstatus, req.statusText, ajaxReqTries);
+                        if (ajaxReqTries > 0) {
+                            ajaxReqTries--;
+                            ajaxReqResend(reqInf, zk.resendTimeout);
+                            return;
+                        }
+                    } else {
+    					//handle MSIE's buggy HTTP status codes
+    					//http://msdn2.microsoft.com/en-us/library/aa385465(VS.85).aspx
+    					switch (rstatus) { //auto-retry for certain case
+    					default:
+    						if (!ajaxReqTries) break;
+    						//fall thru
+    					case 12002: //server timeout
+    					case 12030: //http://danweber.blogspot.com/2007/04/ie6-and-error-code-12030.html
+    					case 12031:
+    					case 12152: // Connection closed by server.
+    					case 12159:
+    					case 13030:
+    					case 503: //service unavailable
+    						if (!ajaxReqTries) ajaxReqTries = 3; //two more try
+    						if (--ajaxReqTries) {
+    							ajaxReqResend(reqInf, zk.resendTimeout);
+    							return;
+    						}
+    					}
+    
+    					if (!reqInf.ignorable && !zk.unloading) {
+    						var msg = req.statusText;
+    						if (zAu.confirmRetry("FAILED_TO_RESPONSE", rstatus+(msg?": "+msg:""))) {
+    							ajaxReqTries = 2; //one more try
+    							ajaxReqResend(reqInf);
+    							return;
+    						}
+					   }
 					}
 				}
 			}
@@ -229,10 +243,10 @@ Copyright (C) 2008 Potix Corporation. All Rights Reserved.
 			}
 		}
 
-		afterResponse(!req);
+		afterResponse();
 	}
-	function afterResponse(noReq) {
-		zAu._doCmds(noReq); //invokes checkProgressing
+	function afterResponse() {
+		zAu._doCmds(); //invokes checkProgressing
 
 		//handle pending ajax send
 		if (sendPending && !ajaxReq && !pendingReqInf) {
@@ -252,6 +266,18 @@ Copyright (C) 2008 Potix Corporation. All Rights Reserved.
 	}
 
 	function ajaxSend(dt, aureq, timeout) {
+		//ZK-1523: dt(desktop) could be null, so search the desktop from target's parent.
+		//call stack: echo2() -> send() 
+		if (!dt) {
+			//original dt is decided by aureq.target.desktop, so start by it's parent.
+			var wgt = aureq.target.parent;
+			while(!wgt.desktop){
+				wgt = wgt.parent;
+			}
+			dt = wgt.desktop;			
+		}
+		////
+		
 		dt._aureqs.push(aureq);
 
 		ajaxSend2(dt, timeout);
@@ -285,7 +311,8 @@ Copyright (C) 2008 Potix Corporation. All Rights Reserved.
 			if (uri) req.send(null);
 			else req.send(reqInf.content);
 
-			if (!reqInf.implicit) zk.startProcessing(zk.procDelay); //wait a moment to avoid annoying
+			if (!reqInf.implicit)
+				zk.startProcessing(zk.procDelay); //wait a moment to avoid annoying
 		} catch (e) {
 			//handle error
 			try {
@@ -342,8 +369,9 @@ Copyright (C) 2008 Potix Corporation. All Rights Reserved.
 		//Bug #2871135, always fire since the client might send back empty
 			if (!cmds || !cmds.length) {
 				zWatch.fire('onResponse', null, {timeout:0, rtags: rtags}); //use setTimeout
-				if (zk.mobile && rtags.onClientInfo) {
-					setTimeout(zk.endProcessing, 150);
+				if (rtags.onClientInfo) {
+					setTimeout(zk.endProcessing, 50); // always stop the processing
+					delete zk.clientinfo;
 				}
 					
 			}
@@ -431,7 +459,14 @@ zAu = {
 			_wgt2map(wgt, map);
 		return map[uuid];
 	},
-
+	_onVisibilityChange: function () { //Called by mount.js when page visibility changed
+		if (zk.visibilitychange) zAu.cmd0.visibilityChange();
+	},
+	//Bug ZK-1596: native will be transfer to stub in EE, store the widget for used in mount.js
+	_storeStub: function (wgt) {
+		if (wgt)
+			_detached.push(wgt);
+	},
 	//Error Handling//
 	/** Register a listener that will be called when the Ajax request failed.
 	 * The listener shall be
@@ -627,7 +662,7 @@ zAu = {
 		pushCmds(cmds, rs);
 		zAu._doCmds();
 	},
-	_doCmds: function (noReq) { //called by mount.js, too
+	_doCmds: function () { //called by mount.js, too
 		for (var fn; fn = doCmdFns.shift();)
 			fn();
 
@@ -677,11 +712,11 @@ zAu = {
 						if (v > 500 || (v < 0 && v > -500)) r = r2;
 					}
 					responseId = r;
-					zAu._doCmds(noReq);
+					zAu._doCmds();
 				}
 			}, 3600);
 		} else
-			checkProgressing(noReq);
+			checkProgressing();
 
 		if (ex) throw ex;
 	},
@@ -827,7 +862,6 @@ zAu.beforeSend = function (uri, req, dt) {
 			|| !(ignorable = ignorable && opts.ignorable)) //all ignorable
 				break;
 		}
-
 		//Consider XML (Pros: ?, Cons: larger packet)
 		var content = "", rtags = {},
 			requri = uri || zk.ajaxURI(null, {desktop:dt,au:true});
@@ -842,7 +876,8 @@ zAu.beforeSend = function (uri, req, dt) {
 			content += zAu.encode(j, aureq, dt);
 			zk.copy(rtags, (aureq.opts||{}).rtags);
 		}
-
+		if (zk.portlet2AjaxURI)
+			requri = zk.portlet2AjaxURI;
 		if (content)
 			ajaxSendNow({
 				sid: seqId, uri: requri, dt: dt, content: content,
@@ -938,6 +973,39 @@ zAu.beforeSend = function (uri, req, dt) {
 	 */
 	//cmd1: null, //jsdoc
 };
+
+/** @partial zAu
+ */
+//@{
+    /** Implements this function to be called if the request fails.
+     * The function receives four arguments: The XHR (XMLHttpRequest) object,
+     * a number describing the status of the request, a string describing the text
+     * of the status, and a number describing the retry value to re-send.
+     * 
+     * <p>For example,
+<pre><code>
+zAu.ajaxErrorHandler = function (req, status, statusText, ajaxReqTries) {
+    if (ajaxReqTries == null)
+        ajaxReqTries = 3; // retry 3 times
+        
+    // reset the resendTimeout, for more detail, please refer to 
+    // http://books.zkoss.org/wiki/ZK_Configuration_Reference/zk.xml/The_client-config_Element/The_auto-resend-timeout_Element 
+    zk.resendTimeout = 2000;//wait 2 seconds to resend.
+    
+    if (!zAu.confirmRetry("FAILED_TO_RESPONSE", status+(statusText?": "+statusText:"")))
+        return 0; // no retry;
+    return ajaxReqTries;
+}
+</code></p>
+     * @param Object req the object of XMLHttpRequest
+     * @param int status the status of the request
+     * @param String statusText the text of the status from the request
+     * @param int ajaxReqTries the retry value for re-sending the request, if undefined
+     *      means the function is invoked first time.
+     * @since 6.5.2
+     */
+    //ajaxErrorHandler: function () {}
+//@};
 
 //Commands//
 /** @class zk.AuCmd0
@@ -1059,6 +1127,13 @@ zAu.cmd0 = /*prototype*/ { //no uuid at all
 			screen.width, screen.height, screen.colorDepth,
 			jq.innerWidth(), jq.innerHeight(), jq.innerX(), jq.innerY(), dpr.toFixed(1), orient],
 			{implicit:true, rtags: {onClientInfo: 1}}));
+	},
+	visibilityChange: function (dtid) {
+		var hidden = document.hidden || document[zk.vendor_ + 'Hidden'],
+			visibilityState = document.visibilityState || document[zk.vendor_ + 'VisibilityState'];
+		
+		zAu.send(new zk.Event(zk.Desktop.$(dtid), "onVisibilityChange",
+			{hidden: hidden, visibilityState: visibilityState}, {implicit: true, ignorable: true}));
 	},
 	/** Asks the client to download the resource at the specified URL.
 	 * @param String url the URL to download from

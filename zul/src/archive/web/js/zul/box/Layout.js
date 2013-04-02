@@ -85,13 +85,24 @@ zul.box.Layout = zk.$extends(zk.Widget, {
 		if (this._shallSize)
 			this.syncSize();
 	},
+	//Bug ZK-1579: should resize if child's visible state changed.
+	onChildVisible_: function (child) {
+		this.$supers('onChildVisible_', arguments);
+		if (this.desktop) {
+			this._shallSize = true;
+			//Bug ZK-1650: change chdex display style according to child widget
+			child.$n('chdex').style.display = child.isVisible() ? '' : 'none';
+		}
+	},
 	onChildAdded_: function () {
 		this.$supers('onChildAdded_', arguments);
-		this._shallSize = true;
+		if (this.desktop)
+			this._shallSize = true;
 	},
 	onChildRemoved_: function () {
 		this.$supers('onChildRemoved_', arguments);
-		this._shallSize = true;
+		if (this.desktop)
+			this._shallSize = true;
 	},
 	removeChildHTML_: function (child) {
 		this.$supers('removeChildHTML_', arguments);
@@ -112,8 +123,13 @@ zul.box.Layout = zk.$extends(zk.Widget, {
 			spc = this._spacing;
 		
 		oo.push('<div id="', child.uuid, '-chdex" class="', this.getZclass(), '-inner"');
-		if(spc && spc != 'auto' && child.nextSibling)
-			oo.push(' style="padding-' + (vert ? 'bottom:' : 'right:') + spc + '"');
+		if (spc && spc != 'auto') {
+			oo.push(' style="', !child.isVisible() ? 'display:none;' : ''); //Bug ZK-1650: set chdex display style according to child widget
+			var next = child.nextSibling; //Bug ZK-1526: popup should not consider spacing
+			if (next && !next.$instanceof(zul.wgt.Popup))
+				oo.push('padding-', vert ? 'bottom:' : 'right:', spc);
+			oo.push('"');
+		}
 		oo.push('>');
 		child.redraw(oo);
 		oo.push('</div>');
@@ -129,15 +145,19 @@ zul.box.Layout = zk.$extends(zk.Widget, {
 	isVertical_: zk.$void,
 	_resetBoxSize: function () {
 		var vert = this.isVertical_();
-		for (var kid = this.firstChild; kid; kid = kid.nextSibling) {
-			if (vert ? (kid._nvflex && kid.getVflex() != 'min')
-					 : (kid._nhflex && kid.getHflex() != 'min')) {
-				
-				kid.setFlexSize_({height:'', width:''});
+		if (!zk.mounting) { // ignore for the loading time
+			for (var kid = this.firstChild; kid; kid = kid.nextSibling) {
 				var chdex = kid.$n('chdex');
-				if (chdex) {
-					chdex.style.height = '';
-					chdex.style.width = '';
+				//ZK-1679: clear height only vflex != min, clear width only hflex != min
+				if (vert && kid._nvflex && kid.getVflex() != 'min') {
+					kid.setFlexSize_({height:'', width:''});
+					if (chdex)
+						chdex.style.height = '';
+				}
+				if (!vert && kid._nhflex && kid.getHflex() != 'min') {
+					kid.setFlexSize_({height:'', width:''});
+					if (chdex)
+						chdex.style.width = '';
 				}
 			}
 		}
@@ -160,7 +180,7 @@ zul.box.Layout = zk.$extends(zk.Widget, {
 	//bug#3296056
 	afterResetChildSize_: function(orient) {
 		for (var kid = this.firstChild; kid; kid = kid.nextSibling) {				
-			var chdex = kid.$n('chdex');
+			var chdex = kid.$n();  //ZK-1509: use kid.$n() instead of kid.$n('chdex')
 			if (chdex) {
 				if (orient == 'h')
 					chdex.style.height = '';
@@ -188,8 +208,35 @@ zul.box.Layout = zk.$extends(zk.Widget, {
 		}
 	},
 	getChildMinSize_: function (attr, wgt) { //'w' for width or 'h' for height
-		var el = wgt.$n().parentNode;
+		var el = wgt.$n(); //Bug ZK-1578: should get child size instead of chdex size
+		//If child uses hflex="1" when parent has hflex="min"
+		//   Find max sibling width and apply on the child
+		if (wgt._hflex && this.isVertical_() && attr == 'w') {
+			for (var w = wgt.nextSibling, max = 0, width; w; w = w.nextSibling) {
+				if (!w._hflex) {
+					width = zjq.minWidth(w.$n());
+					max = width > max ? width : max;
+				}
+			}
+			return max;
+		}
 		return attr == 'h' ? zk(el).offsetHeight() : zjq.minWidth(el); //See also bug ZK-483
+	},
+	//Bug ZK-1577: should consider spacing size of all chdex node
+	getContentEdgeHeight_: function () {
+		var h = 0;
+		for (var kid = this.firstChild; kid; kid = kid.nextSibling)
+			h += zk(kid.$n('chdex')).paddingHeight();
+		
+		return h;
+	},
+	//Bug ZK-1577: should consider spacing size of all chdex node
+	getContentEdgeWidth_: function () {
+		var w = 0;
+		for (var kid = this.firstChild; kid; kid = kid.nextSibling)
+			w += zk(kid.$n('chdex')).paddingWidth();
+		
+		return w;
 	},
 	beforeChildrenFlex_: function(child) {
 		// optimized for performance
@@ -207,29 +254,28 @@ zul.box.Layout = zk.$extends(zk.Widget, {
 			vflexsz = vert ? 0 : 1,
 			hflexs = [],
 			hflexsz = !vert ? 0 : 1,
-			p = child.$n('chdex').parentNode,
 			psz = this._resetBoxSize(),
 			hgh = psz.height,
 			wdh = psz.width,
-			xc = p.firstChild;
+			xc = this.firstChild;
 		
 		for (; xc; xc = xc.nextSibling) {
-			var c = xc.id && xc.id.endsWith('-chdex') ? xc.firstChild : xc,
-				zkc = zk(c);
-			if (zkc.isVisible()) {
-				var j = c.id ? c.id.indexOf('-') : 1,
-					cwgt = j < 0 ? zk.Widget.$(c.id) : null,
-					zkxc = zk(xc);
-				
+			if (xc.isVisible()) {
+				var cwgt = xc,
+					c = cwgt.$n(),
+					zkc = zk(c),
+					cp = c.parentNode,
+					zkxc = zk(cp);
 				//vertical size
-				if (cwgt && cwgt._nvflex) {
+				if (xc && xc._nvflex) {
 					if (cwgt !== child)
 						cwgt._flexFixed = true; //tell other vflex siblings I have done it.
 					if (cwgt._vflex == 'min') {
 						cwgt.fixMinFlex_(c, 'h');
-						xc.style.height = jq.px0(zkxc.revisedHeight(c.offsetHeight + zkc.sumStyles("tb", jq.margins)));
+						var h = c.offsetHeight + zkc.sumStyles("tb", jq.margins) + zkxc.paddingHeight(); //Bug ZK-1577: should consider padding size
+						cp.style.height = jq.px0(zkxc.revisedHeight(h));
 						if (vert) 
-							hgh -= xc.offsetHeight + zkxc.sumStyles("tb", jq.margins);
+							hgh -= cp.offsetHeight + zkxc.sumStyles("tb", jq.margins);
 					} else {
 						vflexs.push(cwgt);
 						if (vert) {
@@ -238,7 +284,7 @@ zul.box.Layout = zk.$extends(zk.Widget, {
 						}
 					}
 				} else if (vert)
-					hgh -= xc.offsetHeight + zkxc.sumStyles("tb", jq.margins);
+					hgh -= cp.offsetHeight + zkxc.sumStyles("tb", jq.margins);
 				
 				//horizontal size
 				if (cwgt && cwgt._nhflex) {
@@ -246,9 +292,10 @@ zul.box.Layout = zk.$extends(zk.Widget, {
 						cwgt._flexFixed = true; //tell other hflex siblings I have done it.
 					if (cwgt._hflex == 'min') {
 						cwgt.fixMinFlex_(c, 'w');
-						xc.style.width = jq.px0(zkxc.revisedWidth(c.offsetWidth + zkc.sumStyles("lr", jq.margins)));
+						var w = c.offsetWidth + zkc.sumStyles("lr", jq.margins) + zkxc.paddingWidth(); //Bug ZK-1577: should consider padding size
+						cp.style.width = jq.px0(zkxc.revisedWidth(w));
 						if (!vert)
-							wdh -= xc.offsetWidth + zkxc.sumStyles("lr", jq.margins);
+							wdh -= cp.offsetWidth + zkxc.sumStyles("lr", jq.margins);
 					} else {
 						hflexs.push(cwgt);
 						if (!vert) {
@@ -257,14 +304,14 @@ zul.box.Layout = zk.$extends(zk.Widget, {
 						}
 					}
 				} else if (!vert)
-					wdh -= xc.offsetWidth + zkxc.sumStyles("lr", jq.margins);
+					wdh -= cp.offsetWidth + zkxc.sumStyles("lr", jq.margins);
 			}
 		}
 
 		//setup the height for the vflex child
 		//avoid floating number calculation error(TODO: shall distribute error evenly)
 		var lastsz = hgh > 0 ? hgh : 0;
-		for (var j = vflexs.length; --j > 0;) {
+		while (vflexs.length > 1) {
 			var cwgt = vflexs.shift(), 
 				vsz = (vert ? (cwgt._nvflex * hgh / vflexsz) : hgh) | 0, //cast to integer
 				offtop = cwgt.$n().offsetTop,
@@ -292,7 +339,7 @@ zul.box.Layout = zk.$extends(zk.Widget, {
 		//setup the width for the hflex child
 		//avoid floating number calculation error(TODO: shall distribute error evenly)
 		lastsz = wdh > 0 ? wdh : 0;
-		for (var j = hflexs.length; --j > 0;) {
+		while (hflexs.length > 1) {
 			var cwgt = hflexs.shift(), //{n: node, f: hflex} 
 				hsz = (vert ? wdh : (cwgt._nhflex * wdh / hflexsz)) | 0; //cast to integer
 			cwgt.setFlexSize_({width:hsz});

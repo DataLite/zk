@@ -30,8 +30,14 @@ it will be useful, but WITHOUT ANY WARRANTY.
 		_stamps = [],
 		_t0 = jq.now();
 
-	function newClass() {
-		return function () {
+	function newClass(copy) {
+		var init = function () {
+			if (!init.$copied) {
+				init.$copied = true;
+				var cf = init.$copyf;
+				delete init.$copyf;
+				cf();
+			}
 			this.$oid = ++_oid;
 			this.$init.apply(this, arguments);
 
@@ -42,6 +48,9 @@ it will be useful, but WITHOUT ANY WARRANTY.
 					ais[j].call(this);
 			}
 		};
+		init.$copyf = copy;
+		init.$copied = !init.$copyf;
+		return init;
 	}
 	function regClass(jclass, superclass) {
 		var oid = jclass.$oid = ++_oid;
@@ -67,23 +76,30 @@ it will be useful, but WITHOUT ANY WARRANTY.
 		return function (v, opts) {
 			var o = this[nm];
 			this[nm] = v;
-			if (o !== v || (opts && opts.force))
+			if (o !== v || (opts && opts.force)) {
+				this.__fname__ = nm.substring(1);
 				after.apply(this, arguments);
+				delete this.__fname__;
+			}
 			return this;
 		};
 	}
 	function defSet10(nm, before) {
 		return function (/*v, opts*/) {
+			this.__fname__ = nm.substring(1);
 			this[nm] = before.apply(this, arguments);
+			delete this.__fname__;
 			return this;
 		};
 	}
 	function defSet11(nm, before, after) {
 		return function (v, opts) {
 			var o = this[nm];
-			this[nm] = v = before.apply(this, arguments);;
+			this.__fname__ = nm.substring(1);
+			this[nm] = v = before.apply(this, arguments);
 			if (o !== v || (opts && opts.force))
 				after.apply(this, arguments);
+			delete this.__fname__;
 			return this;
 		};
 	}
@@ -99,9 +115,16 @@ it will be useful, but WITHOUT ANY WARRANTY.
 		_showprgb();
 	}
 	function _showprgb(mask, icon) {
+		var $jq;
 		if (zk.processing
-		&& !jq("#zk_proc").length && !jq("#zk_showBusy").length)
+		&& !($jq = jq("#zk_proc")).length && !jq("#zk_showBusy").length) {
 			zUtl.progressbox("zk_proc", window.msgzk?msgzk.PLEASE_WAIT:'Processing...', mask, icon);
+		} else if (icon == 'z-initing') {
+			var $jq = $jq || jq("#zk_proc");
+			if ($jq.length && $jq.hasClass('z-loading') && ($jq = $jq.parent()).hasClass('z-temp')) {
+				$jq.append('<div class="z-initing"></div>');
+			}
+		}
 	}
 	function wgt2s(w) {
 		var s = w.widgetName;
@@ -214,6 +237,12 @@ zk.copy(zk, {
 	 * @type int
 	 */
 	tipDelay: 800,
+    /** The timeout for re-sending AU request (unit: milliseconds).
+     * Default: 200 (depending on the server's configuration)
+	 * @since 6.5.2
+     * @type int
+     */
+    resendTimeout: 200,
 	/** The last position that the mouse was clicked (including left and right clicks).
 	 * @type Offset
 	 */
@@ -668,17 +697,48 @@ foo.Widget = zk.$extends(zk.Widget, {
 		if (!superclass)
 			throw 'unknown superclass';
 
-		var jclass = newClass(),
-			thispt = jclass.prototype,
+		var fe = !(zk.feature && zk.feature.ee),
 			superpt = superclass.prototype,
-			define = members['$define'];
-		delete members['$define'];
-		zk.copy(thispt, superpt); //inherit non-static
-		zk.define(jclass, define);
-		zk.copy(thispt, members);
-
+			jclass = newClass(function () {
+				if (superclass.$copyf && !superclass.$copied) {
+					superclass.$copyf();
+					superclass.$copied = true;
+				}
+				var define = members['$define'],
+					superpt = superclass.prototype,
+					thispt = jclass.prototype;
+				
+				if (define)	delete members['$define'];
+				
+				var zf = zk.feature;
+				if (!(zf && zf.ee)) {
+					for (var p in superpt) {//inherit non-static
+						var $p = '|'+p+'|';
+						if ('|_$super|_$subs|$class|_$extds|superclass|className|widgetName|blankPreserved|'.indexOf($p) < 0) {
+							thispt[p] = superpt[p];	
+						} else if (thispt[p] == undefined && '|className|widgetName|blankPreserved|'.indexOf($p) >= 0) {
+							thispt[p] = superpt[p]; // have to inherit from its parent.
+						}
+					}
+				}
+				
+				zk.define(jclass, define);
+				zk.copy(thispt, members);
+			}),
+			thispt = jclass.prototype;
+		
+		if (fe) {
+			jclass.$copyf();
+			jclass.$copied = true;
+		} else {
+			function _init() { this.constructor = jclass; };
+		    _init.prototype = superclass.prototype;
+		    jclass.prototype = new _init();
+			thispt = jclass.prototype;
+		}
+		
 		for (var p in superclass) //inherit static
-			if (p != 'prototype')
+			if ('|prototype|$copyf|$copied|'.indexOf('|'+p+'|') < 0)
 				jclass[p] = superclass[p];
 
 		zk.copy(jclass, staticMembers);
@@ -781,6 +841,17 @@ zk.override(zul.inp.Combobox.prototype, _xCombobox, {
 	 * @see #override(Object, Map, Map)
 	 */
 	override: function (dst, backup, src) {
+		var $class = dst.$class;
+		if ($class && $class.$copied === false) {
+			var f = $class.$copyf;
+			$class.$copyf = function () {
+				f();
+				$class.$copied = true;
+				zk.override(dst, backup, src);
+			};
+			return dst;
+		}
+		var fe = !(zk.feature && zk.feature.ee);
 		switch (typeof backup) {
 		case "function":
 			var old = dst;
@@ -788,12 +859,23 @@ zk.override(zul.inp.Combobox.prototype, _xCombobox, {
 			return old;
 		case "string":
 			// B50-ZK-493: shall update subclasses
-			_overrideSub(dst, backup, dst['$'+backup] = dst[backup], dst[backup] = src, true);
+			if (fe)
+				_overrideSub(dst, backup, dst['$'+backup] = dst[backup], dst[backup] = src, true);
+			else {
+				dst['$'+backup] = dst[backup];
+				dst[backup] = src;
+			}
 			return dst;
 		}
-
-		for (var nm in src)
-			_overrideSub(dst, nm, backup[nm] = dst[nm], dst[nm] = src[nm]);
+		if (fe) {
+			for (var nm in src)
+				_overrideSub(dst, nm, backup[nm] = dst[nm], dst[nm] = src[nm]);
+		} else {
+			for (var nm in src) {
+				backup[nm] = dst[nm];
+				dst[nm] = src[nm];
+			}
+		}
 		return dst;
 	},
 
@@ -1155,7 +1237,8 @@ zk.log('value is", value);
 				uri = '/' + uri; //non-au supports relative path
 		}
 
-		var j = ctx.lastIndexOf(';'), k = ctx.lastIndexOf('?');
+		var j = ctx.indexOf(';'), //ZK-1668: may have multiple semicolon in the URL
+			k = ctx.lastIndexOf('?');
 		if (j < 0 && k < 0) return abs ? ctx + uri: uri;
 
 		if (k >= 0 && (j < 0 || k < j)) j = k;

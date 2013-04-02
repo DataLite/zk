@@ -29,9 +29,9 @@ import org.zkoss.zk.au.AuRequest;
  * <p>Application isn't really aware the existence of a stub component.
  * Rather, it is used by ZK Loader to minimize the footprint, if
  * it found a component doesn't have to maintain the states at the server
- * after renderred.
+ * after rendered.
  * For example, {@link org.zkoss.zk.ui.HtmlNativeComponent} and stub-only components
- * will degenerate to {@link StubComponent} or {@link StubsComponent} after renderred.
+ * will degenerate to {@link StubComponent} or {@link StubsComponent} after rendered.
  * Refer {@link Component#setStubonly} for details about a stub-only component.
  *
  * <p>A component that wants to degenerate to a stub component usually
@@ -48,7 +48,7 @@ public class StubComponent extends AbstractComponent {
 	/** Returns ID of the given UUID, or null if not found or no ID assigned.
 	 * It assumes the given UUID belonged to one of the component being
 	 * merged into this component.
-	 * <p>Notice that it searches all descendants of this componet.
+	 * <p>Notice that it searches all descendants of this component.
 	 */
 	public String getId(String uuid) {
 		if (uuid.equals(getUuid()))
@@ -59,7 +59,7 @@ public class StubComponent extends AbstractComponent {
 		for (Component child = comp.getFirstChild(); child != null;
 		child = child.getNextSibling()) {
 			if (child instanceof StubComponent) {
-				String id = ((StubComponent)child).getId(uuid); //recurive
+				String id = ((StubComponent)child).getId(uuid); //recursive
 				if (id != null)
 					return id;
 			} else {

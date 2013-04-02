@@ -36,7 +36,8 @@ function zkver(ver, build, ctxURI, updURI, modVers, opts) {
 	for (var nm in modVers)
 		zk.setVersion(nm, modVers[nm]);
 
-	zk.feature = {standard: true};
+	if (!zk.feature)
+		zk.feature = {standard: true};
 	zkopt(opts);
 }
 
@@ -69,6 +70,7 @@ function zkamn(pkg, fn) {
 		_crInfBL0 = [], _crInfBL1 = [], //create info for BL
 		_crInfAU0 = [], //create info for AU
 		_aftMounts = [], //afterMount
+		_aftResizes = [], //afterResize
 		_mntctx = {}, //the context
 		_paci = {s: 0, e: -1, f0: [], f1: []}, //for handling page's AU responses
 		_t0 = jq.now();
@@ -140,7 +142,31 @@ function zkamn(pkg, fn) {
 			} else
 				setTimeout(fn, delay);
 	};
-
+/** @partial zk
+ */
+//@{
+    /** Adds a function that will be executed after all of the onSize events are done.
+     * <p>Here lists the execution phases:
+     * <ol>
+     *     <li>After the page loaded, the function added in the afterResze() will be invoked</li>
+     *     <li>After the browser resized, the function added in the afterResze() will be invoked</li>
+     *     <li>After zWatch.fire/fireDown('onSize'), the function added in the afterResze() will be invoked</li>
+     * </ol>
+     * </p>
+     * @param Function fn the function to execute after resized
+     * @since 6.5.2
+     */
+    //afterResize: function () {}
+//@};
+    zk.afterResize = function (fn) {
+        if (fn)
+            _aftResizes.push(fn);
+    }
+    zk.doAfterResize = function () {
+        for (var fn; fn = _aftResizes.shift();) {
+            fn();
+        }
+    }
 	function _curdt() {
 		return _mntctx.curdt || (_mntctx.curdt = zk.Desktop.$());
 	}
@@ -214,8 +240,18 @@ function zkamn(pkg, fn) {
 			var wgt = inf[1];
 			if (inf[2])
 				wgt.bind(inf[0]); //bindOnly
-			else
+			else {
+				var $jq;
+				if (zk.processing
+						&& ($jq = jq("#zk_proc")).length) {
+					if ($jq.hasClass('z-loading') && $jq.parent().hasClass('z-temp')) {
+						$jq[0].id = 'zna';
+						if (!jq("#zk_proc").length) //B65-ZK-1431: check if progressbox exists
+							zUtl.progressbox("zk_proc", window.msgzk?msgzk.PLEASE_WAIT:'Processing...', true);
+					}
+				}
 				wgt.replaceHTML('#' + wgt.uuid, inf[0]);
+			}
 
 			doAuCmds(inf[3]); //aucmds
 		}
@@ -230,14 +266,7 @@ function zkamn(pkg, fn) {
 		zk.mounting = false;
 		doAfterMount(mtBL1);
 		_paci && ++_paci.s;
-		if (zk.mobile) {
-			setTimeout(function () {
-			// close it when no ClientInfo event registered,
-			// otherwise the onResponse event will take care that.
-			if (!zAu._cInfoReg)
-				zk.endProcessing();
-			}, 500);
-		} else {
+		if (!zk.clientinfo) {// if existed, the endProcessing() will be invoked after onResponse()
 			zk.endProcessing();
 		}
 
@@ -315,10 +344,11 @@ function zkamn(pkg, fn) {
 				|| zAu._wgt$(uuid))) //search detached (in prev cmd of same AU)
 					throw "Unknown stub "+uuid;
 				var w = new Widget();
+				if (wgt.desktop) //Bug ZK-1596: may already unbind
+					wgt.unbind(); //reuse it as new widget, bug ZK-1589: should unbind first then replace
 				zk._wgtutl.replace(wgt, w, stub);
 					//to reuse wgt, we replace it with a dummy widget, w
 					//if #stubs, we have to reuse the whole subtree (not just wgt), so don't move children
-				wgt.unbind(); //reuse it as new widget
 			} else {
 				var cls = zk.$import(type);
 				if (!cls)
@@ -398,10 +428,23 @@ function zkamn(pkg, fn) {
 
 			if (wi) {
 				if (wi[0] === 0) { //page
-					var props = wi[2];
-					zkdt(zk.cut(props, "dt"), zk.cut(props, "cu"), zk.cut(props, "uu"), zk.cut(props, "ru"));
+					var props = wi[2],
+						dt = zkdt(zk.cut(props, "dt"), zk.cut(props, "cu"), zk.cut(props, "uu"), zk.cut(props, "ru"));
 					if (owner = zk.cut(props, "ow"))
 						owner = Widget.$(owner);
+					var zf;
+					if ((zf = zk.feature) && (zf.pe || zf.ee) && zk.clientinfo !== undefined) {
+						zAu.cmd0.clientInfo(dt.uuid);
+						if (extra) {
+							var newExtra = [];
+							for (var j = 0; j < extra.length; j += 2) {
+								if (extra[j] != 'clientInfo')
+									newExtra.push(extra[j], extra[j + 1]);
+							}
+							extra = newExtra;
+						}
+					} else
+						delete zk.clientinfo;
 				}
 
 				infs.push([_curdt(), wi, _mntctx.bindOnly, owner, extra]);
@@ -716,6 +759,9 @@ jq(function() {
 			if (wevt.domStopped)
 				return false;
 		}
+	})
+	.bind((document.hidden !== undefined ? '' : zk.vendor_) + 'visibilitychange', function (evt) {
+		zAu._onVisibilityChange();
 	});
 
 	zjq.fixOnResize(900); //IE6/7: it sometimes fires an "extra" onResize in loading
@@ -738,7 +784,7 @@ jq(function() {
 		if ((_reszInf.lastTime && now < _reszInf.lastTime) || _reszInf.inResize)
 			return; //ignore resize for a while (since onSize might trigger onsize)
 
-		var delay = zk.ie ? 250: 50;
+		var delay = zk.ie || zk.android ? 250: 50;
 		_reszInf.time = now + delay - 1; //handle it later
 		setTimeout(_docResize, delay);
 

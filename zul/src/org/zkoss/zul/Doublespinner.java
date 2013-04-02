@@ -51,12 +51,21 @@ public class Doublespinner extends NumberInputElement {
 		setValue(new Double(value));
 	}
 	
-	/** Returns the value (in Double), might be null unless
-	 * a constraint stops it.
-	 * @exception WrongValueException if user entered a wrong value
+	/** Returns the value (in Double)
+	 * @exception WrongValueException if user entered a wrong value or null value
 	 */
 	public Double getValue() throws WrongValueException {
 		return (Double)getTargetValue();
+	}
+
+	@Override
+	protected Object getTargetValue() throws WrongValueException {
+		Object val = super.getTargetValue();
+		if (val instanceof Double) {
+			return val;
+		}
+		throw showCustomError(new WrongValueException(this,
+				MZul.NUMBER_REQUIRED, val == null ? "null" : val));
 	}
 
 	/** Returns the value in double. If null, zero is returned.

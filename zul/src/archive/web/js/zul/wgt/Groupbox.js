@@ -127,7 +127,7 @@ zul.wgt.Groupbox = zk.$extends(zul.Widget, {
 	},
 	_fixHgh: function () {
 		var hgh = this.$n().style.height;
-		if (hgh && hgh != "auto") {
+		if (hgh && hgh != "auto" && this.isOpen()) {
 			var n;
 			if (n = this.$n('cave')) {
 				if (zk.ie6_) n.style.height = "";
@@ -186,6 +186,10 @@ zul.wgt.Groupbox = zk.$extends(zul.Widget, {
 				h += jq(c).outerHeight();
 		} else
 			h = zkn.revisedHeight(height, true); // excluding margin for F50-3000873.zul and B50-3285635.zul
+		
+		if (zk.ie6_) //IE6 will add inner padding and border height
+			h -= zk(this.getCaveNode()).padBorderHeight();
+		
 		n.style.height = jq.px0(h);
 			
 		// fixed for B50-3317729.zul on webkit
@@ -223,7 +227,7 @@ zul.wgt.Groupbox = zk.$extends(zul.Widget, {
 		this.$supers(zul.wgt.Groupbox, 'bind_', arguments);
 		zWatch.listen({onSize: this});
 		var tt;
-		if (tt = this.$n('title'))
+		if (this.getTitle() && (tt = this.$n('title')))
 			this.domListen_(tt, 'onClick', '_doTitleClick');
 	},
 	unbind_: function () {
@@ -251,6 +255,11 @@ zul.wgt.Groupbox = zk.$extends(zul.Widget, {
 			this.caption = null;
 			this.rerender();
 		}
+	},
+	//@Override, Bug ZK-1524: caption children should not considered.
+	getChildMinSize_: function (attr, wgt) {
+		if (!wgt.$instanceof(zul.wgt.Caption))
+			return this.$supers('getChildMinSize_', arguments);
 	},
 
 	domClass_: function () {

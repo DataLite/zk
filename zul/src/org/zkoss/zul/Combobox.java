@@ -106,7 +106,7 @@ public class Combobox extends Textbox {
 	private ComboitemRenderer<?>_renderer;
 	private transient ListDataListener _dataListener;
 	private transient EventListener<InputEvent> _eventListener;
-	/**Used to detect whether to syn Comboitem's index later. */
+	/**Used to detect whether to sync Comboitem's index later. */
 	private boolean _syncItemIndicesLater;
 
 	static {
@@ -151,7 +151,7 @@ public class Combobox extends Textbox {
 	 * If a non-null model is assigned, no matter whether it is the same as
 	 * the previous, it will always cause re-render.
 	 *
-	 * @param model the list model to associate, or null to dis-associate
+	 * @param model the list model to associate, or null to dissociate
 	 * any previous model.
 	 * @exception UiException if failed to initialize with the model
 	 * @since 3.0.2
@@ -168,7 +168,7 @@ public class Combobox extends Textbox {
 				// Bug B60-ZK-1202.zul
 				// Remove current items anyway, when changing models
 				if (!getItems().isEmpty()) { 
-				  getItems().clear();
+				    getItems().clear();  
 				}
 				
 				_model = model;
@@ -182,7 +182,7 @@ public class Combobox extends Textbox {
 			//such that we won't render the same set of data twice
 			//--
 			//For better performance, we shall load the first few row now
-			//(to save a roundtrip)
+			//(to save a round trip)
 		} else if (_model != null) {
 			_model.removeListDataListener(_dataListener);
 			if (_model instanceof ListSubModel)
@@ -773,6 +773,10 @@ public class Combobox extends Textbox {
 
 			syncSelectionToModel();
 			Events.postEvent(evt);
+		} else if (cmd.equals(Events.ON_CHANGE)) {
+			super.service(request, everError);
+			//Bug ZK-1492: synchronize the input value to selection
+			syncValueToSelection();
 		} else
 			super.service(request, everError);
 	}

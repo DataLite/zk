@@ -112,7 +112,10 @@ zul.wnd.Panel = zk.$extends(zul.Widget, {
 		 * @return boolean
 		 */
 		movable: _zkf = function () {
+			var last = this._lastSize; //Bug ZK-1500: remember last size before rerender
 			this.rerender(this._skipper);
+			if (last)
+				this._lastSize = last;
 		},
 		/**
 		 * Sets whether to float the panel to display it inline where it is rendered.
@@ -209,7 +212,10 @@ zul.wnd.Panel = zk.$extends(zul.Widget, {
 		 * @return String
 		 */
 		border: function () {
+			var last = this._lastSize;
 			this.rerender(); // no skipper, as body DOM depends on border
+			if (last)
+				this._lastSize = last;
 		},
 		/** 
 		 * Sets the title.
@@ -225,10 +231,14 @@ zul.wnd.Panel = zk.$extends(zul.Widget, {
 		 * @return String
 		 */
 		title: function () {
-			if (this.caption)
+			if (this.caption) {
 				this.caption.updateDomContent_(); // B50-ZK-313
-			else
+			} else {
+				var last = this._lastSize;
 				this.rerender(this._skipper);
+				if (last)
+					this._lastSize = last;
+			}
 		},
 		/** 
 		 * Opens or closes this Panel.
@@ -872,6 +882,11 @@ zul.wnd.Panel = zk.$extends(zul.Widget, {
 			this._drag.destroy();
 			this._drag = null;
 		}
+		// Bug ZK-1467: Resizable panels inside portallayout loses resizability after move
+		if (this._sizer) {
+			this._sizer.destroy();
+			this._sizer = null;
+		}
 		this.domUnlisten_(this.$n(), 'onMouseMove');
 		this.domUnlisten_(this.$n(), 'onMouseOut');
 		this.$supers(zul.wnd.Panel, 'unbind_', arguments);
@@ -1029,6 +1044,11 @@ zul.wnd.Panel = zk.$extends(zul.Widget, {
 		this.$supers('onChildVisible_', arguments);
 		if((child == this.tbar || child == this.bbar || child == this.fbar) && this.$n())
 			this._fixHgh();
+	},
+	//@Override, Bug ZK-1524: caption children should not considered.
+	getChildMinSize_: function (attr, wgt) {
+		if (!wgt.$instanceof(zul.wgt.Caption))
+			return this.$supers('getChildMinSize_', arguments);
 	}
 }, { //static
 	//drag

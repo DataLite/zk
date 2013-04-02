@@ -258,7 +258,7 @@ public class Selectbox extends HtmlBasedComponent {
 	 * always cause re-render.
 	 * 
 	 * @param model
-	 *            the list model to associate, or null to dis-associate any
+	 *            the list model to associate, or null to dissociate any
 	 *            previous model.
 	 * @exception UiException
 	 *                if failed to initialize with the model
@@ -273,6 +273,7 @@ public class Selectbox extends HtmlBasedComponent {
 					_model.removeListDataListener(_dataListener);
 				}
 				_model = model;
+				_jsel = -1; //Bug ZK-1418: clear select index since model is changed.
 				initDataListener();
 				postOnInitRender();
 			}

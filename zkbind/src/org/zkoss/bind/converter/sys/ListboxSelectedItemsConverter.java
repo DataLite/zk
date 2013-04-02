@@ -14,6 +14,7 @@ package org.zkoss.bind.converter.sys;
 
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.zkoss.bind.BindContext;
@@ -39,12 +40,12 @@ public class ListboxSelectedItemsConverter implements Converter, java.io.Seriali
 		Listbox lbx = (Listbox) comp;
 		final ListModel<?> model = lbx.getModel();
 		if(model !=null && !(model instanceof Selectable)){
-			//model has to imple Selectable if binding to selectedItems
+			//model has to implement Selectable if binding to selectedItems
   			throw new UiException("model doesn't implement Selectable");
   		}
 		
-  		final Set<Listitem> items = new HashSet<Listitem>();
-		Set<Object> vals = val == null ? null : (Set<Object>) Classes.coerce(HashSet.class, val);
+  		final Set<Listitem> items = new LinkedHashSet<Listitem>();
+		Set<Object> vals = val == null ? null : (Set<Object>) Classes.coerce(LinkedHashSet.class, val);
 		
 	  	if (vals != null && vals.size()>0) {
 	  		if(model!=null){
@@ -69,7 +70,7 @@ public class ListboxSelectedItemsConverter implements Converter, java.io.Seriali
 
 	@SuppressWarnings("unchecked")
 	public Object coerceToBean(Object val, Component comp, BindContext ctx) {
-		Set<Object> vals = new HashSet<Object>();
+		Set<Object> vals = new LinkedHashSet<Object>();
 		if (val != null) {
 			final Listbox lbx = (Listbox) comp;
 	  		final ListModel<?> model = lbx.getModel();

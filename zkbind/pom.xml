@@ -82,7 +82,7 @@
 		<dependency>
 			<groupId>org.zkoss.zk</groupId>
 			<artifactId>zul</artifactId>
-			<version>6.0.2</version>
+			<version>${project.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>javax.servlet</groupId>
@@ -137,27 +137,6 @@
 					<target>1.5</target>
 				</configuration>
 			</plugin>
-                        <plugin>
-                            <groupId>org.apache.maven.plugins</groupId>
-                            <artifactId>maven-source-plugin</artifactId>
-                            <version>2.2</version>
-                            <executions>
-                                <execution>
-                                    <goals>
-                                        <goal>jar</goal>
-                                    </goals>
-                                </execution>
-                            </executions>
-                        </plugin>
 		</plugins>
 	</build>
-        
-    <distributionManagement>
-        <repository>
-            <id>DataLite</id>
-            <name>DataLite-releases</name>
-            <url>http://zealot:8081/artifactory/libs-releases-local</url>
-        </repository>
-    </distributionManagement>
-        
 </project> 

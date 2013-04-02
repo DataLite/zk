@@ -37,7 +37,7 @@ it will be useful, but WITHOUT ANY WARRANTY.
 		var wgtn = wgt.$n(),
 			ws = wgtn ? wgtn.style.whiteSpace : ""; //bug#3106514: sizedByContent with not visible columns
 		if (wgtn) {
-			if (zk.ie8_)
+			if (zk.ie8_ || zk.ie9)
 				wgt._wsbak = ws; // B50-ZK-432
 			if (zk.ie < 8)
 				jq(wgtn).addClass('z-word-nowrap'); // B50-ZK-333
@@ -191,7 +191,7 @@ it will be useful, but WITHOUT ANY WARRANTY.
 		if (wgtn) {
 			if (zk.ie < 8)
 				jq(wgtn).removeClass('z-word-nowrap'); // B50-ZK-333
-			else if (!zk.ie8_) // B50-ZK-432: restore later for IE 8
+			else if (!(zk.ie8_ || zk.ie9)) // B50-ZK-432: restore later for IE 8
 				wgtn.style.whiteSpace = ws;
 		}
 		return {width: width, wds: wds};
@@ -635,6 +635,9 @@ zul.mesh.MeshWidget = zk.$extends(zul.Widget, {
 		this._bindDomNode();
 		if (this._hflex != 'min')
 			this._fixHeaders();
+		// Bug ZK-1284: Scrolling on grid/listbox header could cause column heading/body to misalign 
+		if ((zk.chrome || zk.ie || zk.safari) && this.ehead)
+			this.domListen_(this.ehead, 'onScroll');
 		if (this.ebody) {
 			this.domListen_(this.ebody, 'onScroll');
 			this.ebody.style.overflow = ''; // clear
@@ -647,6 +650,10 @@ zul.mesh.MeshWidget = zk.$extends(zul.Widget, {
 			zk(paging).redoCSS();
 	},
 	unbind_: function () {
+		// Bug ZK-1284: Scrolling on grid/listbox header could cause column heading/body to misalign
+		if ((zk.chrome || zk.ie || zk.safari) && this.ehead)
+			this.domUnlisten_(this.ehead, 'onScroll');
+		
 		if (this.ebody)
 			this.domUnlisten_(this.ebody, 'onScroll');
 
@@ -708,7 +715,7 @@ zul.mesh.MeshWidget = zk.$extends(zul.Widget, {
 						empty = false;
 				}
 			var old = this.ehead.style.display,
-				tofix = (force || empty) && flex && this.isRealVisible();
+				tofix = force && flex && this.isRealVisible(); //Bug ZK-1647: no need to consider empty header for flex calculation
 			this.ehead.style.display = empty ? 'none' : '';
 			//onSize is not fired to empty header when loading page, so we have to simulate it here
 			for (var w = this.head.firstChild; w; w = w.nextSibling) {
@@ -837,27 +844,42 @@ zul.mesh.MeshWidget = zk.$extends(zul.Widget, {
 		if (zk.safari && this._ignoreDoScroll) 
 			return;
 		
-		if (!(this.fire('onScroll', this.ebody.scrollLeft).stopped)) {
-			if (this._currentLeft != this.ebody.scrollLeft) { //care about horizontal scrolling only
-				if (this.ehead) {
-					this.ehead.scrollLeft = this.ebody.scrollLeft;
+		var ehead = this.ehead,
+			ebody = this.ebody,
+			efoot = this.efoot;
+		
+		// Bug ZK-1284: Scrolling on grid/listbox header could cause column heading/body to misalign
+		if ((zk.chrome || zk.ie || zk.safari) && ehead && zk(ehead).isVisible() && //Bug ZK-1649: should check if ehead is visible or not
+				!(this.fire('onScroll', ehead.scrollLeft).stopped)) {
+			if (this._currentLeft != ehead.scrollLeft) {
+				if (ebody)
+					ebody.scrollLeft = ehead.scrollLeft;
+				if (efoot) 
+					efoot.scrollLeft = ehead.scrollLeft;
+			}
+		}
+		
+		if (!(this.fire('onScroll', ebody.scrollLeft).stopped)) {
+			if (this._currentLeft != ebody.scrollLeft) { //care about horizontal scrolling only
+				if (ehead) {
+					ehead.scrollLeft = ebody.scrollLeft;
 					//bug# 3039339: Column is not aligned in some special combination of dimension
-					var diff = this.ebody.scrollLeft - this.ehead.scrollLeft;
-					var hdflex = jq(this.ehead).find('table>tbody>tr>th:last-child')[0];
+					var diff = ebody.scrollLeft - ehead.scrollLeft;
+					var hdflex = jq(ehead).find('table>tbody>tr>th:last-child')[0];
 					if (diff) { //use the hdfakerflex to compensate
 						hdflex.style.width = (hdflex.offsetWidth + diff) + 'px';
-						this.ehead.scrollLeft = this.ebody.scrollLeft;
-					} else if (parseInt(hdflex.style.width) != 0 && this.ebody.scrollLeft == 0) {
+						ehead.scrollLeft = ebody.scrollLeft;
+					} else if (parseInt(hdflex.style.width) != 0 && ebody.scrollLeft == 0) {
 						hdflex.style.width = '';
 					}
 				}
-				if (this.efoot) 
-					this.efoot.scrollLeft = this.ebody.scrollLeft;
+				if (efoot) 
+					efoot.scrollLeft = ebody.scrollLeft;
 			}
 		}
 		
 		var t = zul.mesh.Scrollbar.getScrollPosV(this),
-			l = this.ebody.scrollLeft,
+			l = ebody.scrollLeft,
 			scrolled = (t != this._currentTop || l != this._currentLeft);
 		if (scrolled && 
 				// Bug ZK-353 ignore in rod
@@ -908,7 +930,7 @@ zul.mesh.MeshWidget = zk.$extends(zul.Widget, {
 			if (_fixPageSize(this, rows))
 				return; //need to reload with new page size
 		
-		if (zk.ie8_ && (this._wsbak !== undefined)) { // B50-ZK-432
+		if ((zk.ie8_ || zk.ie9) && (this._wsbak !== undefined)) { // B50-ZK-432
 			this.$n().style.whiteSpace = this._wsbak;
 			delete this._wsbak;
 		}
@@ -1430,7 +1452,7 @@ zul.mesh.MeshWidget = zk.$extends(zul.Widget, {
 		// B50-ZK-1038: in IE, when body has 0 height, it has 0 client width
 		var useOffset = zk.ie && (bdtable.parentNode.offsetHeight == 0 || 
 			(zk.ie < 8 && !this.getHeight() && !this.$n().style.height));
-		//**Tricky. ie6/ie7 strange behavior, will generate horizontal scrollbar, minus one to avoid it!
+		//Tricky. ie6/ie7 strange behavior, will generate horizontal scrollbar, minus one to avoid it!
 		var	total = bdtable.parentNode[useOffset ? 'offsetWidth' : 'clientWidth'] - (zk.ie < 8 ? 1 : 0), 
 			extSum = total - width;
 		
@@ -1559,7 +1581,7 @@ zul.mesh.MeshWidget = zk.$extends(zul.Widget, {
 		_adjMinWd(this);
 	}
 });
-/** @class zk.Scrollbar
+/** @class zul.mesh.Scrollbar
  * @import zk.Widget
  * The extra Scrollbar for the MeshWidget.
  * It is designed to be overriden
@@ -1567,14 +1589,14 @@ zul.mesh.MeshWidget = zk.$extends(zul.Widget, {
  */
 zul.mesh.Scrollbar = {
 	/**
-	 * Initialize the scrollbar.
+	 * Initialize the scrollbar of MeshWidget.
 	 * @param zk.Widget wgt a widget
 	 */
 	init: function (wgt) {
 		return;
 	},
 	/**
-	 * Return the vertical scroll position of the given DOM elements.
+	 * Return the vertical scroll position of the body element of given MeshWidget.
 	 * @param zk.Widget wgt the widget
 	 * @return int
 	 */

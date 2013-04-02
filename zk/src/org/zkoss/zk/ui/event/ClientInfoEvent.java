@@ -74,6 +74,8 @@ public class ClientInfoEvent extends Event {
 	 * @param dthgh the desktop's height
 	 * @param dtx the desktop's the left offset
 	 * @param dty the desktop's the top offset
+	 * @param dpr the device's devicePixelRatio
+	 * @param orient the device's orientation
 	 */
 	public ClientInfoEvent(String name, int timeZoneOfs,
 	int scrnwd, int scrnhgh, int colorDepth,
@@ -131,7 +133,7 @@ public class ClientInfoEvent extends Event {
 	/** The the current horizontal pixel location of the top-left corner of
 	 * the document in the window.
 	 * It is changed by user when he scrolls the browser.
-	 * <p>To change it programmingly, use {@link org.zkoss.zk.ui.util.Clients#scrollTo}.
+	 * <p>To change it programmatically, use {@link org.zkoss.zk.ui.util.Clients#scrollTo}.
 	 */
 	public int getDesktopXOffset() {
 		return _dtx;
@@ -139,7 +141,7 @@ public class ClientInfoEvent extends Event {
 	/** The the current vertical pixel location of the top-left corner of
 	 * the document in the window.
 	 * It is changed by user when he scrolls the browser.
-	 * <p>To change it programmingly, use {@link org.zkoss.zk.ui.util.Clients#scrollTo}.
+	 * <p>To change it programmatically, use {@link org.zkoss.zk.ui.util.Clients#scrollTo}.
 	 */
 	public int getDesktopYOffset() {
 		return _dty;

@@ -56,7 +56,9 @@ zul.mesh.HeaderWidget = zk.$extends(zul.LabelImageWidget, {
 		}
 	},
 	setFlexSize_: function (sz) {
-		if ((sz.width !== undefined && sz.width != 'auto' && sz.width != '') || sz.width == 0) { //JavaScript deems 0 == '' 
+		if ((sz.width !== undefined && sz.width != 'auto' && sz.width != '') || sz.width == 0) { //JavaScript deems 0 == ''
+			if (zk.ie > 9) //IE 10 width is not enough to put text that will cause nowrap issue
+				sz.width += 1;
 			//remember the value in _hflexWidth and use it when rerender(@see #domStyle_)
 			//for faker column, so don't use revisedWidth().
 			//updated: need to concern inner padding due to _getContentEdgeWidth
@@ -266,8 +268,9 @@ zul.mesh.HeaderWidget = zk.$extends(zul.LabelImageWidget, {
 				if (scroll > 11)
 					w -= scroll;
 
-				if (zk.ie){ //Related bugs: ZK-890 and ZK-242
-					if (scroll > 11 || !mw.ebody.clientWidth) {
+				if (zk.ie) { //Related bugs: ZK-890 and ZK-242
+					//Bug ZK-1642: only IE 6/7 has horizontal scrollbar issue
+					if (zk.ie < 8 && (scroll > 11 || !mw.ebody.clientWidth)) {
 						// For bug #3255116, we have to avoid IE to appear the hor. scrollbar.
 						var hdflex = jq(mw.ehead).find('table>tbody>tr>th:last-child')[0];
 						hdflex.style.width = '';

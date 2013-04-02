@@ -52,7 +52,7 @@ public class Attributes {
 </code></pre>
 	 *
 	 * <p>If you prefer to draw the desktop with the page, you can set the
-	 * vallue to <code>desktop</code>. By drawing the desktop, it means HTML and BODY
+	 * value to <code>desktop</code>. By drawing the desktop, it means HTML and BODY
 	 * tags will be generated, too.
 	 *
 	 * <p>If you prefer to draw the page only (such as being included),
@@ -93,7 +93,7 @@ public class Attributes {
 	 * However, if a ZUML page is included by other servlet (such as
 	 * JSP and DSP), this attribute won't be set.
 	 * If you set Cache-Control manually, you might also set
-	 * this attribute to save the use of memroy.
+	 * this attribute to save the use of memory.
 	 *
 	 * <pre><code>request.setAttribute(Attributes.NO_CACHE, Boolean.TRUE);</code></pre>
 	 *
@@ -120,12 +120,7 @@ public class Attributes {
 	 * @since 3.5.1
 	 */
 	public static final String RENEW_NATIVE_SESSION = "org.zkoss.zk.ui.renewNativeSession";
-	/** A special attribute set to the session to cause Google App Engine
-	 * to update attributes to the storage.
-	 * @since 5.0.0
-	 */
-	public static final String GAE_FIX = "org.zkoss.zk.gae.fix";
-
+	
 	//Library//
 	/** A library property to indicate whether UUID shall not be recycled.
 	 * <p>Default: false (i.e., not disabled).
@@ -151,14 +146,25 @@ public class Attributes {
 	 * It is designed to avoid the annoying warning messages found in some JVM.
 	 * For example, IBM JVM shows a warning if wait() exceeds 10 minutes.
 	 * To prevent the warning, you can set the value to less than 10 minutes.
+	 * <p>If you'd like to aborting the activation (and then stops the pending thread),
+	 * you can specify {@link ACTIVATE_RETRY_ABORT} to "true". Then, after timeout,
+	 * the activation will be aborted.
 	 * <p>Default: 120000 (unit: milliseconds)
 	 * @since 5.0.3
 	 */
 	public static final String ACTIVATE_RETRY_DELAY = "org.zkoss.zk.ui.activate.wait.retry.timeout";
+	/** A library property used with {@link ACTIVATE_RETRY_DELAY} to indicate if
+	 * the time waiting for activation is longer than {@link ACTIVATE_RETRY_DELAY},
+	 * the activation will be aborted and the thread will end.
+	 * <P>Default: false.
+	 * <p>It has no function if {@link ACTIVATE_RETRY_DELAY} is not specified (with a positive value).
+	 * @since 6.5.2
+	 */
+	public static final String ACTIVATE_RETRY_ABORT = "org.zkoss.zk.ui.activate.wait.retry.abort";
 
 	//URI//
 	/** A special prefix that is used if you want to inject a special
-	 * fragment into the URI of a clss Web resource (CWR).
+	 * fragment into the URI of a class Web resource (CWR).
 	 * The fragment is ignored with retrieving the file, so it can be anything
 	 * to make the browser consider it as a different URI.
 	 *
@@ -175,21 +181,21 @@ public class Attributes {
 	 */
 	public static final String PAGE_RENDERING = "org.zkoss.zk.ui.page.rendering";
 
-	/** A component attribute used to indicate whether to enable the stubing of
+	/** A component attribute used to indicate whether to enable the stubbing of
 	 * the native components.
 	 * <p>By default, the native component will be stub-ized, i.e., replaced
 	 * with a stateless component called {@link org.zkoss.zk.ui.sys.StubComponent},
 	 * such that the memory footprint will be minimized.
 	 * To stub-ize non-native, please use {@link org.zkoss.zk.ui.Component#setStubonly}.
-	 * <p>Default: true. Though rarely, you could disable the stubing by
+	 * <p>Default: true. Though rarely, you could disable the stubbing by
 	 * setting this attribute to false. For example, if you have a component that
-	 * has native childs, and you'd like to detach it and re-attach later.
+	 * has native children, and you'd like to detach it and re-attach later.
 	 * Since the server does not maintain the states, it cannot be restored when
 	 * attached back.
 	 * <p>It shall be set to a component's attribute, and it affects
 	 * all descendant components unless it was set explicitly.
 	 * <p>Default: true
-	 * <p>Avaialbe in ZK EE only.
+	 * <p>Available in ZK EE only.
 	 * @since 5.0.6
 	 */
 	public static final String STUB_NATIVE = "org.zkoss.zk.ui.stub.native";

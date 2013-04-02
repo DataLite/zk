@@ -81,19 +81,19 @@ zul.inp.RoundUtl = {
 	/** Synchronizes the input element's width of this component
 	*/
 	syncWidth: function (wgt, rightElem) {
-		var node = wgt.$n();
-		if (!zk(node).isRealVisible() || (!wgt._inplace && !node.style.width))
+		var node = wgt.$n(), ns = node.style;
+		if (!zk(node).isRealVisible() || (!wgt._inplace && !ns.width))
 			return;
 
 		var inp = wgt.getInputNode();
 		
-		if (!node.style.width && wgt._inplace &&
+		if (!ns.width && wgt._inplace &&
 			(wgt._buttonVisible == undefined
 				|| wgt._buttonVisible)) {
-			node.style.width = jq.px0(this.getOuterWidth(wgt, true));
+			ns.width = jq.px0(this.getOuterWidth(wgt, true));
 		}
 		
-		if (zk.ie6_ && node.style.width)
+		if (zk.ie6_ && ns.width)
 			inp.style.width = '0px';
 	
 		var width = this.getOuterWidth(wgt, wgt.inRoundedMold()),
@@ -101,6 +101,11 @@ zul.inp.RoundUtl = {
 			rightElemWidth = rightElem ? rightElem.offsetWidth -
 					zk(rightElem).sumStyles('l', jq.borders) : 0,
 			rev = zk(inp).revisedWidth(width - rightElemWidth);
+		// Fix bug discovered by B50-3032892.ztl
+		// * inplace input widget's width reduced by one pixel each time 
+		//   it received focus then blurred
+		if (rightElem && !zk.safari_ && !zk.opera && !wgt._inplace && ns.width.indexOf('%') >= 0)
+			rev -= 1; //Bug ZK-1368: reduce 1px for right edge element, Bug ZK-1540: ZK-1368 only affect on percentage width
 		inp.style.width = jq.px0(rev);
 	},
 	getOuterWidth: function(wgt, rmInplace) {
@@ -738,7 +743,15 @@ zul.inp.InputWidget = zk.$extends(zul.Widget, {
 			if (vi.rawValue != null) { //coerce failed
 				data = {rawValue: vi.rawValue};
 			} else if (!vi.error) {
-				inp.value = value = this.coerceToString_(vi.value);
+				/*
+				 * ZK-1220: with instant="true", inp.value = value will occur position error when change position.
+				 * Datebox, Timebox and FormatWidget which assign format can't avoid this issue.
+				 * Because they will change the "value" all the time.
+				 */
+				value = this.coerceToString_(vi.value);
+				if (inp.value !== value) {
+					inp.value = value;					
+				}
 				this._reVald = false;
 
 				//reason to use this._defRawVal rather than this._value is
@@ -920,7 +933,7 @@ zul.inp.InputWidget = zk.$extends(zul.Widget, {
 	onChangingForced: true
 });
 
-/** @class zk.InputCtrl
+/** @class zul.inp.InputCtrl
  * @import zk.Widget
  * @import jq.Event
  * @import zk.Draggable

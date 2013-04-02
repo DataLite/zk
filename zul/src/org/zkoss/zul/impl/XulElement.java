@@ -103,15 +103,15 @@ abstract public class XulElement extends HtmlBasedComponent {
 	}
 
 	/** Returns the ID of the popup ({@link Popup}) that should appear
-	 * when the user right-clicks on the element (aka., context menu).
+	 * when the user right-clicks on the element (a.k.a., context menu).
 	 *
 	 * <p>Default: null (no context menu).
 	 */
 	public String getContext() {
-		return _auxinf != null ? _auxinf.ctx: null;
+		return _auxinf != null && _auxinf.context != null ? (String) _auxinf.context.getValue() : null;
 	}
 	/** Sets the ID of the popup ({@link Popup}) that should appear
-	 * when the user right-clicks on the element (aka., context menu).
+	 * when the user right-clicks on the element (a.k.a., context menu).
 	 *
 	 * <p>An onOpen event is sent to the context menu if it is going to
 	 * appear. Therefore, developers can manipulate it dynamically
@@ -153,16 +153,20 @@ abstract public class XulElement extends HtmlBasedComponent {
 	 * <pre>
 	 * &lt;button label="show" context="id, start_before"/>
 	 * </pre>
+	 * <p> (since 6.5.2) the context menu can also be shown on customized location of <code>x</code> and <code>y</code> by adding parentheses"()", for example,
+	 * <pre>
+	 * &lt;button label="show" context="id, x=(zk.currentPointer[0] + 10), y=(zk.currentPointer[1] - 10)"/&gt;
+	 * </pre>
 	 * @see #setContext(Popup)
 	 */
 	public void setContext(String context) {
-		if (!Objects.equals(_auxinf != null ? _auxinf.ctx: null, context)) {
-			initAuxInfo().ctx = context;
-			smartUpdate("context", getContext());
+		if (!Objects.equals(_auxinf != null ? _auxinf.context: null, context)) {
+			initAuxInfo().context = new DeferedUuid(context);
+			smartUpdate("context", _auxinf.context);
 		}
 	}
 	/** Sets the UUID of the popup that should appear 
-	 * when the user right-clicks on the element (aka., context menu).
+	 * when the user right-clicks on the element (a.k.a., context menu).
 	 *
 	 * <p>Note: it actually invokes
 	 * <code>setContext("uuid(" + popup.getUuid() + ")")</code>
@@ -171,7 +175,10 @@ abstract public class XulElement extends HtmlBasedComponent {
 	 * @see Popup#open(org.zkoss.zk.ui.Component, String)
 	 */
 	public void setContext(Popup popup) {
-		setContext(popup != null ? "uuid(" + popup.getUuid() + ")": null);
+		if (!Objects.equals(_auxinf != null ? _auxinf.context: null, popup)) {
+			initAuxInfo().context = new DeferedUuid(popup);
+			smartUpdate("context", _auxinf.context);
+		}
 	}
 	/** Returns the ID of the popup ({@link Popup}) that should appear
 	 * when the user clicks on the element.
@@ -179,7 +186,7 @@ abstract public class XulElement extends HtmlBasedComponent {
 	 * <p>Default: null (no popup).
 	 */
 	public String getPopup() {
-		return _auxinf != null ? _auxinf.popup: null;
+		return _auxinf != null && _auxinf.popup != null ? (String) _auxinf.popup.getValue() : null;
 	}
 	/** Sets the ID of the popup ({@link Popup}) that should appear
 	 * when the user clicks on the element.
@@ -212,13 +219,17 @@ abstract public class XulElement extends HtmlBasedComponent {
 	 * <pre>
 	 * &lt;button label="show" popup="id, start_before"/>
 	 * </pre>
+	 * <p> (since 6.5.2) the popup can also be shown on customized location of <code>x</code> and <code>y</code> by adding parentheses"()", for example,
+	 * <pre>
+	 * &lt;button label="show" context="id, x=(zk.currentPointer[0] + 10), y=(zk.currentPointer[1] - 10)"/&gt;
+	 * </pre>
 	 * @see #setPopup(Popup)
 	 * @see Popup#open(org.zkoss.zk.ui.Component, String)
 	 */
 	public void setPopup(String popup) {
 		if (!Objects.equals(_auxinf != null ? _auxinf.popup: null, popup)) {
-			initAuxInfo().popup = popup;
-			smartUpdate("popup", getPopup());
+			initAuxInfo().popup = new DeferedUuid(popup);
+			smartUpdate("popup", _auxinf.popup);
 		}
 	}
 	/** Sets the UUID of the popup that should appear
@@ -230,7 +241,10 @@ abstract public class XulElement extends HtmlBasedComponent {
 	 * @see #setPopup(String)
 	 */
 	public void setPopup(Popup popup) {
-		setPopup(popup != null ? "uuid(" + popup.getUuid() + ")": null);
+		if (!Objects.equals(_auxinf != null ? _auxinf.popup: null, popup)) {
+			initAuxInfo().popup = new DeferedUuid(popup);
+			smartUpdate("popup", _auxinf.popup);
+		}
 	}
 	/** Returns the ID of the popup ({@link Popup}) that should be used
 	 * as a tooltip window when the mouse hovers over the element for a moment.
@@ -239,7 +253,7 @@ abstract public class XulElement extends HtmlBasedComponent {
 	 * <p>Default: null (no tooltip).
 	 */
 	public String getTooltip() {
-		return _auxinf != null ? _auxinf.tooltip != null ? (String)  _auxinf.tooltip.getValue() : null: null;
+		return _auxinf != null && _auxinf.tooltip != null ? (String)  _auxinf.tooltip.getValue() : null;
 	}
 	/** Sets the ID of the popup ({@link Popup}) that should be used
 	 * as a tooltip window when the mouse hovers over the element for a moment.
@@ -275,6 +289,10 @@ abstract public class XulElement extends HtmlBasedComponent {
 	 * <pre>
 	 * &lt;button label="show" tooltip="id, start_before"/>
 	 * </pre>
+	 * <p> (since 6.5.2) the tooltip can also be shown on customized location of <code>x</code> and <code>y</code> by adding parentheses"()", for example,
+	 * <pre>
+	 * &lt;button label="show" context="id, x=(zk.currentPointer[0] + 10), y=(zk.currentPointer[1] - 10)"/&gt;
+	 * </pre>
 	 * 
 	 * @see #setTooltip(Popup)
 	 * @see Popup#open(org.zkoss.zk.ui.Component, String)
@@ -282,7 +300,7 @@ abstract public class XulElement extends HtmlBasedComponent {
 	public void setTooltip(String tooltip) {
 		// ZK-816
 		if (!Objects.equals(_auxinf != null ? _auxinf.tooltip: null, tooltip)) {
-			initAuxInfo().tooltip = new DeferedTooltip(tooltip);
+			initAuxInfo().tooltip = new DeferedUuid(tooltip);
 			smartUpdate("tooltip", _auxinf.tooltip);
 		}
 	}
@@ -297,7 +315,7 @@ abstract public class XulElement extends HtmlBasedComponent {
 	public void setTooltip(Popup popup) {
 		// ZK-816, component keep wrong tooltip reference if set tooltip before tooltip attached
 		if (!Objects.equals(_auxinf != null ? _auxinf.tooltip: null, popup)) {
-			initAuxInfo().tooltip = new DeferedTooltip(popup);
+			initAuxInfo().tooltip = new DeferedUuid(popup);
 			smartUpdate("tooltip", _auxinf.tooltip);
 		}
 	}
@@ -327,15 +345,15 @@ abstract public class XulElement extends HtmlBasedComponent {
 			_auxinf = new AuxInfo();
 		return _auxinf;
 	}
-	/** Merge multiple memembers into an single object (and create on demand)
+	/** Merge multiple members into an single object (and create on demand)
 	 * to minimize the footprint
 	 * @since 5.0.4
 	 */
 	private static class AuxInfo implements java.io.Serializable, Cloneable {
 		/** The popup ID that will be shown when click. */
-		private String popup;
+		private DeferredValue popup;
 		/** The context ID that will be shown when right-click. */
-		private String ctx;
+		private DeferredValue context;
 		/** The tooltip ID that will be shown when mouse-over. */
 		private DeferredValue tooltip;
 		/** What control and function keys to intercepts. */
@@ -350,17 +368,17 @@ abstract public class XulElement extends HtmlBasedComponent {
 		}
 	}
 	
-	private static class DeferedTooltip implements DeferredValue,Serializable{
+	private static class DeferedUuid implements DeferredValue,Serializable{
 		private static final long serialVersionUID = -122378869909137783L;
 		
 		private Popup popup;
 		private String popupString;
-		public DeferedTooltip(String tooltip) {
+		public DeferedUuid(String popupString) {
 			super();
-			this.popupString = tooltip;
+			this.popupString = popupString;
 		}
 		
-		public DeferedTooltip(Popup tooltip) {
+		public DeferedUuid(Popup tooltip) {
 			super();
 			this.popup = tooltip;
 		}

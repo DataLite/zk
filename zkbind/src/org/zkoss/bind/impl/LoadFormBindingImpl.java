@@ -12,7 +12,10 @@ Copyright (C) 2011 Potix Corporation. All Rights Reserved.
 
 package org.zkoss.bind.impl;
 
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,6 +28,8 @@ import org.zkoss.bind.sys.BindEvaluatorX;
 import org.zkoss.bind.sys.BinderCtrl;
 import org.zkoss.bind.sys.ConditionType;
 import org.zkoss.bind.sys.LoadFormBinding;
+import org.zkoss.bind.sys.debugger.BindingExecutionInfoCollector;
+import org.zkoss.bind.sys.debugger.impl.info.LoadInfo;
 import org.zkoss.bind.xel.zel.BindELContext;
 import org.zkoss.xel.ExpressionX;
 import org.zkoss.xel.ValueReference;
@@ -50,12 +55,14 @@ public class LoadFormBindingImpl extends FormBindingImpl implements	LoadFormBind
 		final Binder binder = getBinder();
 		final BindEvaluatorX eval = binder.getEvaluatorX();
 		final Component comp = getComponent();
+		final BindingExecutionInfoCollector collector = ((BinderCtrl)getBinder()).getBindingExecutionInfoCollector();
+		
 		final Object bean = eval.getValue(ctx, comp, _accessInfo.getProperty());
 		//ZK-1016 Nested form binding doesn't work.
 		final ValueReference valref = eval.getValueReference(ctx, comp,  _accessInfo.getProperty());
 		//value-reference is null if it is a simple node, ex ${vm}
 		if( (valref!=null && valref.getBase() instanceof Form) || bean instanceof Form){
-			throw new UiException("doesn't support to load a nested form , formId "+getFormId());
+			throw new UiException(MiscUtil.formatLocationMessage("doesn't support to load a nested form , formId "+getFormId(),comp));
 		}
 		
 		
@@ -68,7 +75,25 @@ public class LoadFormBindingImpl extends FormBindingImpl implements	LoadFormBind
 			//sets the last loaded bean express of the form
 			comp.setAttribute(BinderImpl.LOAD_FORM_EXPRESSION, getPropertyString());
 			
-			for (String field : fex.getLoadFieldNames()) {
+			
+			//ZK-1259, for the case of nested form expression in same loading, e.g. @load(fx.hash[fx.key]),
+			//it will produce 2 loadField name, 'hash[fx.key]' & 'key', 
+			//and fx + 'hash[fx.key]' will get null if fx + 'key' is not loaded yet and throw exception
+			//i sort the field name to let inner value be loaded into form first.
+			final String fomrid = getFormId();
+			List<String> fields = new LinkedList<String>(fex.getLoadFieldNames());
+			Collections.sort(fields, new Comparator<String>() {
+				@Override
+				public int compare(String o1, String o2) {
+					o1 = BindELContext.appendFields(fomrid, o1);
+					o2 = BindELContext.appendFields(fomrid, o2);
+					if(o1.indexOf(o2)>0) return 1;
+					if(o2.indexOf(o1)>0) return -1;
+					return 0;
+				}
+			});
+			
+			for (String field : fields) {
 				final ExpressionX expr = getFieldExpression(eval, field);
 				if (expr != null) {
 					final Object value = eval.getValue(ctx, comp, expr);
@@ -89,6 +114,23 @@ public class LoadFormBindingImpl extends FormBindingImpl implements	LoadFormBind
 		if(form instanceof FormExt){
 			binder.notifyChange(((FormExt)form).getStatus(), ".");//notify change of fxStatus and fxStatus.*
 		}
+		
+		if(collector!=null){
+			collector.addInfo(new LoadInfo(LoadInfo.FORM_LOAD,comp,getConditionString(ctx),
+					getPropertyString(),getFormId(),bean,getArgs(),null));
+		}
+	}
+	
+	private String getConditionString(BindContext ctx){
+		StringBuilder condition = new StringBuilder();
+		if(getConditionType()==ConditionType.BEFORE_COMMAND){
+			condition.append("before = '").append(getCommandName()).append("'");
+		}else if(getConditionType()==ConditionType.AFTER_COMMAND){
+			condition.append("after = '").append(getCommandName()).append("'");
+		}else{
+			condition.append(ctx.getTriggerEvent()==null?"":"event = "+ctx.getTriggerEvent().getName()); 
+		}
+		return condition.length()==0?null:condition.toString();
 	}
 	
 	public void setSeriesLength(int len) {

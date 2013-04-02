@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
@@ -35,6 +36,8 @@ import java.util.Comparator;
 import org.zkoss.io.Serializables;
 import org.zkoss.lang.Exceptions;
 import static org.zkoss.lang.Generics.*;
+
+import org.zkoss.lang.Classes;
 import org.zkoss.lang.Library;
 import org.zkoss.lang.Objects;
 import org.zkoss.util.logging.Log;
@@ -265,7 +268,7 @@ public class Tree extends MeshElement {
 		}
 	}
 	/**
-	 * Returens a map of current visible item.
+	 * Returns a map of current visible item.
 	 * @since 3.0.7
 	 */
 	Map<Treeitem, Boolean> getVisibleItems() {
@@ -420,6 +423,9 @@ public class Tree extends MeshElement {
 	private class PGListener implements SerializableEventListener<PagingEvent>,
 			CloneableEventListener<PagingEvent> {
 		public void onEvent(PagingEvent event) {
+			//Bug ZK-1622: reset anchor position after changing page
+			_anchorTop = 0;
+			_anchorLeft = 0;
 			Events.postEvent(
 				new PagingEvent(event.getName(),
 					Tree.this, event.getPageable(), event.getActivePage()));
@@ -467,7 +473,7 @@ public class Tree extends MeshElement {
 	public Paging getPagingChild() {
 		return _paging;
 	}
-	/** Returns the page size, aka., the number items per page.
+	/** Returns the page size, a.k.a., the number items per page.
 	 * @exception IllegalStateException if {@link #getPaginal} returns null,
 	 * i.e., mold is not "paging" and no external controller is specified.
 	 * @since 2.4.1
@@ -475,7 +481,7 @@ public class Tree extends MeshElement {
 	public int getPageSize() {
 		return inPagingMold() ? pgi().getPageSize(): 0;
 	}
-	/** Sets the page size, aka., the number items per page.
+	/** Sets the page size, a.k.a., the number items per page.
 	 * <p>Note: mold is "paging" and no external controller is specified.
 	 * @since 2.4.1
 	 */
@@ -633,7 +639,7 @@ public class Tree extends MeshElement {
 	}
 
 	/** Returns whether to grow and shrink vertical to fit their given space,
-	 * so called vertial flexibility.
+	 * so called vertical flexibility.
 	 *
 	 * <p>Note: this attribute is ignored if {@link #setRows} is specified
 	 *
@@ -643,7 +649,7 @@ public class Tree extends MeshElement {
 		return _vflex;
 	}
 	/** Sets whether to grow and shrink vertical to fit their given space,
-	 * so called vertial flexibility.
+	 * so called vertical flexibility.
 	 *
 	 * <p>Note: this attribute is ignored if {@link #setRows} is specified
 	 */
@@ -1469,7 +1475,7 @@ public class Tree extends MeshElement {
 	 * If you want it to re-render, you could assign the same model again
 	 * (i.e., setModel(getModel())), or fire an {@link TreeDataEvent} event.
 	 *
-	 * @param model the tree model to associate, or null to dis-associate
+	 * @param model the tree model to associate, or null to dissociate
 	 * any previous model.
 	 * @exception UiException if failed to initialize with the model
 	 * @since 3.0.0
@@ -1568,6 +1574,20 @@ public class Tree extends MeshElement {
 		}
 	}
 
+	/**
+	 * Sets the renderer by use of a class name. It creates an instance
+	 * automatically.
+	 * @since 6.5.2
+	 */
+	public void setItemRenderer(String clsnm) throws ClassNotFoundException,
+			NoSuchMethodException, IllegalAccessException,
+			InstantiationException, java.lang.reflect.InvocationTargetException {
+		if (clsnm != null)
+			setItemRenderer((TreeitemRenderer) Classes
+					.newInstanceByThread(clsnm));
+	}
+
+
 	/** Returns the renderer to render each item, or null if the default
 	 * renderer is used.
 	 * @return the renderer to render each item, or null if the default
@@ -1629,6 +1649,26 @@ public class Tree extends MeshElement {
 		Events.postEvent(ZulEvents.ON_AFTER_RENDER, this, null);// notify the tree when items have been rendered.
 	}
 
+	private int[] getPath0(Treechildren parent, int index) {
+		List<Integer> path = new LinkedList<Integer>();
+		path.add(index);
+		Component p = parent;
+		while(true) {
+			p = p.getParent();
+			if (p instanceof Treeitem) {
+				Component treechildren = p.getParent();
+				if (treechildren != null) {
+					path.add(0, treechildren.getChildren().indexOf(p));
+					p = treechildren;
+				}
+			} else
+				break;
+		}
+		final int[] ipath = new int[path.size()];
+		for (int j = 0; j < ipath.length; j++)
+			ipath[j] = path.get(j);
+		return ipath;
+	}
 	/*
 	 * Renders the direct children for the specified parent
 	 */
@@ -1649,7 +1689,7 @@ public class Tree extends MeshElement {
 				TreeSelectableModel model = (TreeSelectableModel) _model;
 				if (!model.isSelectionEmpty() && 
 						getSelectedCount() != model.getSelectionCount() &&
-						model.isPathSelected(path = _model.getPath(childNode)))
+						model.isPathSelected(path = getPath0(parent, i)))
 					addItemToSelection(ti);
 			}
 			if (_model instanceof TreeOpenableModel) {
@@ -1657,7 +1697,7 @@ public class Tree extends MeshElement {
 				if (!model.isOpenEmpty()) {
 					if (!isLeaf) {
 						if (path == null)
-							path = _model.getPath(childNode);
+							path = getPath0(parent, i);
 						ti.setOpen(model.isPathOpened(path));
 					}
 				}
@@ -1748,6 +1788,50 @@ public class Tree extends MeshElement {
 		private boolean _rendered, _ctrled;
 		private Renderer() {
 			_renderer = getRealRenderer();
+		}
+
+		// B65-ZK-1608: Tree node become leaf node after update
+		@SuppressWarnings("unchecked")
+		private void renderChangedItem(Treeitem item, Object node, int index) throws Throwable {
+			if (!_rendered && (_renderer instanceof RendererCtrl)) {
+				((RendererCtrl)_renderer).doTry();
+				_ctrled = true;
+			}
+			try {
+				try {
+					if (item.getTreerow() != null) // just in case
+						item.getTreerow().detach();
+					Treechildren tc = item.getTreechildren();
+					_renderer.render(item, node, index);
+					Object newTreeitem = item.getAttribute("org.zkoss.zul.model.renderAs");
+					if (newTreeitem instanceof Treeitem) {
+						Treeitem newItem = ((Treeitem)newTreeitem);
+						newItem.appendChild(tc);
+						if (_model instanceof TreeOpenableModel) {
+							TreeOpenableModel model = (TreeOpenableModel) _model;
+
+							// reset open status - B65-ZK-1639
+							newItem.setOpen(!(model.isOpenEmpty() || !model.isPathOpened(getPath0((Treechildren)newItem.getParent(), index))));
+							if (!item.isLoaded() && newItem.isOpen())
+								Tree.this.renderChildren(this, tc, node);
+							newItem.setLoaded(item.isLoaded());
+						}
+					}
+				} catch (AbstractMethodError ex) {
+					final Method m = _renderer.getClass()
+						.getMethod("render", new Class<?>[] {Treeitem.class, Object.class});
+					m.setAccessible(true);
+					m.invoke(_renderer, new Object[] {item, node});
+				}
+			} catch (Throwable ex) {
+				try {
+					item.setLabel(Exceptions.getMessage(ex));
+				} catch (Throwable t) {
+					log.error(t);
+				}
+				throw ex;
+			}
+			_rendered = true;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -1897,7 +1981,7 @@ public class Tree extends MeshElement {
 
 			final Renderer renderer = new Renderer();
 			try {
-				renderer.render(item, node, item.getIndex()); //re-render
+				renderer.renderChangedItem(item, node, item.getIndex()); //re-render
 			} catch (Throwable ex) {
 				renderer.doCatch(ex);
 			} finally {

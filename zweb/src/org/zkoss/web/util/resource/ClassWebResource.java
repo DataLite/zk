@@ -51,6 +51,7 @@ import org.zkoss.web.servlet.Servlets;
 import org.zkoss.web.servlet.Charsets;
 import org.zkoss.web.servlet.http.Https;
 import org.zkoss.web.servlet.http.Encodes;
+import org.zkoss.xml.XMLs;
 
 /**
  * Used to access resources located in class path and under /web.
@@ -75,7 +76,7 @@ public class ClassWebResource {
 	private static final Log log = Log.lookup(ClassWebResource.class);
 
 	private final ServletContext _ctx;
-	/** maping URI including PATH_PREFIX. */
+	/** mapping URI including PATH_PREFIX. */
 	private String _mappingURI;
 	private final CWC _cwc;
 	/** An array of extensions that have to be compressed (with gzip). */
@@ -182,7 +183,7 @@ public class ClassWebResource {
 		_expires = cal.getTime().getTime();
 	}
 
-	/** Returns the instance (singlton in the whole app) for
+	/** Returns the instance (singleton in the whole app) for
 	 * handling resources located in class path.
 	 */
 	public static final
@@ -294,24 +295,24 @@ public class ClassWebResource {
 			ext = ext.substring(j + 1);
 		}
 	}
-	/** Returns the Extendlet (aka., resource processor) of the
+	/** Returns the Extendlet (a.k.a., resource processor) of the
 	 * specified extension, or null if not associated.
 	 *
 	 * <p>It is a shortcut of <code>getExtendlet(ext, true)</code>.
 	 *
 	 * @param ext the extension, e.g, "js" and "css.dsp".
-	 * @return the Extendlet (aka., resource processor),
+	 * @return the Extendlet (a.k.a., resource processor),
 	 * or null if not associated yet.
 	 * @since 2.4.1
 	 */
 	public Extendlet getExtendlet(String ext) {
 		return getExtendlet(ext, true);
 	}
-	/** Adds an {@link Extendlet} (aka., resource processor) to process
+	/** Adds an {@link Extendlet} (a.k.a., resource processor) to process
 	 * the resource of the specified extension.
 	 *
 	 * @param ext the extension, e.g, "js" and "css".
-	 * @param extlet the Extendlet (aka., resouce processor) to add
+	 * @param extlet the Extendlet (a.k.a., resource processor) to add
 	 * @return the previous Extendlet, or null if not associated before.
 	 * @since 2.4.1
 	 */
@@ -337,7 +338,7 @@ public class ClassWebResource {
 			return _extlets.put(ext, extlet);
 		}
 	}
-	/** Removes the {@link Extendlet} (aka., resource processor)
+	/** Removes the {@link Extendlet} (a.k.a., resource processor)
 	 * for the specified extension.
 	 *
 	 * @param ext the extension, e.g, "js" and "css.dsp".
@@ -355,7 +356,7 @@ public class ClassWebResource {
 		}
 	}
 
-	/** Returns an array of the filters ({@link Filter}) of the speficied
+	/** Returns an array of the filters ({@link Filter}) of the specified
 	 *  extension, or null if not associated.
 	 *
 	 * <p>Note: if the extension is "js.dsp", then it searches
@@ -516,7 +517,7 @@ public class ClassWebResource {
 	 * Java (i.e., uncompressed) file instead of the compressed one.
 	 * For example, if {@link #service} is called to load abc.js,
 	 * and {@link #isDebugJS}, then {@link #service} will try
-	 * to load abc.src.js first. If not found, it load ab.js insted.
+	 * to load abc.src.js first. If not found, it loads ab.js instead.
 	 *
 	 * <p>If {@link #isDebugJS} is false (default),
 	 * abc.js is always loaded.
@@ -533,7 +534,7 @@ public class ClassWebResource {
 	/** Called by WebManager#setUpdateUri when WebManager is created
 	 * by HttpSessionListener#contextInitialized
 	 * 
-	 * @param mappingURI maping URI excluding PATH_PREFIX.
+	 * @param mappingURI mapping URI excluding PATH_PREFIX.
 	 */
 	public void setMappingURI (String mappingURI) {
 		if (!mappingURI.startsWith("/") || mappingURI.endsWith("/"))
@@ -562,7 +563,7 @@ public class ClassWebResource {
 				pi = pi.substring(len2);
 		}
 
-		final String ext = Servlets.getExtension(pi, false); //complete ext
+		final String ext = Servlets.getExtension(pi, false); //complete extension
 		final Filter[] filters = getFilters(ext,
 			Servlets.isIncluded(request) ? FILTER_INCLUDE: FILTER_REQUEST);
 		if (filters == null) {
@@ -633,7 +634,7 @@ public class ClassWebResource {
 					//FUTURE: zweb shall not depend on zk
 			} else {
 				if (Servlets.isIncluded(request)) log.error("Resource not found: "+pi);
-				response.sendError(response.SC_NOT_FOUND, pi);
+				response.sendError(response.SC_NOT_FOUND, XMLs.escapeXML(pi));
 				return;
 			}
 		} else {
@@ -654,7 +655,7 @@ public class ClassWebResource {
 		if (Servlets.isIncluded(request)) { //usually getWriter
 			try {
 				out = new WriterOutputStream(response.getWriter(), "UTF-8");
-				//Not response.getCharacterEncoding becauses it is for "data"
+				//Not response.getCharacterEncoding because it is for "data"
 			} catch (IllegalStateException ex) {
 				try {
 					out = response.getOutputStream();

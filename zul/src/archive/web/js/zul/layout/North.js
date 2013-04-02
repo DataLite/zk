@@ -16,6 +16,7 @@ it will be useful, but WITHOUT ANY WARRANTY.
  * A north region of a border layout.
  * <p>Default {@link #getZclass}: z-north.
  */
+var North =
 zul.layout.North = zk.$extends(_zkf = zul.layout.LayoutRegion, {
 	_sumFlexHeight: true, //indicate shall add this flex height for borderlayout. @See _fixMinFlex in widget.js
 	/**
@@ -42,13 +43,18 @@ zul.layout.North = zk.$extends(_zkf = zul.layout.LayoutRegion, {
 	 * {@link #getHeight()}.
 	 * @return String
 	 */
-	getSize: _zkf.prototype.getHeight,
+	getSize: function () {
+		// Bug ZK-1490: Cannot find 'getHeight' method in widget.js
+		return this.$supers(North, 'getHeight', arguments);
+	},
 	/**
 	 * Sets the size of this region. This method is shortcut for
 	 * {@link #setHeight(String)}.
 	 * @param String size
 	 */
-	setSize: _zkf.prototype.setHeight,
+	setSize: function () {
+		return this.$supers(North, 'setHeight', arguments);
+	},
 
 	_ambit2: function (ambit, mars, split) {
 		ambit.w = mars.left + mars.right;

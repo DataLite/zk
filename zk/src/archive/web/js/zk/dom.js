@@ -589,6 +589,51 @@ zjq.prototype = {
 		}
 		return this;
 	},
+	/**
+	 * Checks whether the element is shown in the current viewport.
+	 * @return boolean if false, it means the element is not shown.
+	 * @since 6.5.2
+	 */
+	isScrollIntoView: (function () {
+		function _overflowElement(self) {
+			var el = self.jq[0],
+				te, le;
+			do {
+				if (!te) {
+					if (el.style.overflow == 'auto' || el.style.overflowY == 'auto')
+						te = el;
+				}
+				if (!le) {
+					if (el.style.overflow == 'auto' || el.style.overflowX == 'auto')
+						le = el;
+				}
+				if (te && le)
+					break;
+				el = el.parentNode;
+			} while (el);
+			return [le, te];
+		}
+		return function () {
+			var vOffset = this.viewportOffset(),
+				x = vOffset[0],
+				y = vOffset[1],
+				w = this.jq[0].offsetWidth,
+				h = this.jq[0].offsetHeight,
+				x1 = x + w,
+				y1 = y + h;
+			
+			// browser's viewport
+			if (x >= 0 && y >= 0 && x1 <= jq.innerWidth() && y1 <= jq.innerHeight()) {
+				var oel = _overflowElement(this),
+				lex = zk(oel[0].parentNode).viewportOffset()[0],
+				tey = zk(oel[1].parentNode).viewportOffset()[1];
+				
+				// scrollbar's viewport
+				return (x >= lex && x1 <= lex + oel[0].offsetWidth && y >= tey && y1 <= tey + oel[1].offsetHeight);
+			}
+			return false;		
+		};
+	})(),
 	/** Tests if the first matched DOM element has the vertical scrollbar
 	 * @return int the difference of offsetWidth and clientWidth if the element has the vertical scrollbar,
 	 * or 0 if no scrollbar
@@ -611,14 +656,15 @@ zjq.prototype = {
 	/** Tests if the first matched element is overlapped with the specified
 	 * element.
 	 * @param DOMElement el the element to check with
+	 * @param int the tolerant value for the calculation
 	 * @return boolean true if they are overlapped.
 	 */
-	isOverlapped: function (el) {
+	isOverlapped: function (el, tolerant) {
 		var n;
 		if (n = this.jq[0])
 			return jq.isOverlapped(
-				this.cmOffset(), [n.offsetWidth, n.offsetHeight],
-				zk(el).cmOffset(), [el.offsetWidth, el.offsetHeight]);
+				this.cmOffset(), [n.offsetWidth, n.offsetHeight], zk(el).cmOffset(),
+				    [el.offsetWidth, el.offsetHeight], tolerant);
 	},
 
 	/** Returns the summation of the specified styles.
@@ -1414,9 +1460,14 @@ jq(el).zk.center(); //same as 'center'
 				var cf, p;
 				// ZK-851
 				if ((zk.ff || zk.opera) && (cf = zk._prevFocus) && 
-					(p = zk.Widget.$(el)) && zUtl.isAncestor(p, cf) && 
-					cf.getInputNode)
-					jq(cf.getInputNode()).trigger('blur');
+					(p = zk.Widget.$(el)) && zUtl.isAncestor(p, cf)) { 
+					if (cf.getInputNode)
+						jq(cf.getInputNode()).trigger('blur');
+					
+					// ZK-1324: Trendy button inside bandbox popup doesn't lose focus when popup is closed
+					if (cf.$instanceof(zul.wgt.Button))
+						jq(cf.$n('btn') || cf.$n()).trigger('blur');
+				}
 			}
 		}
 		return this;
@@ -1761,21 +1812,34 @@ zk.copy(jq, {
 			_sbwDiv.style.cssText = "top:-1000px;left:-1000px;position:absolute;visibility:hidden;border:none;width:50px;height:50px;overflow:scroll;";
 			document.body.appendChild(_sbwDiv);
 		}
-		return _sbwDiv.offsetWidth - _sbwDiv.clientWidth;
+		return _sbwDiv._value || (_sbwDiv._value = _sbwDiv.offsetWidth - _sbwDiv.clientWidth);
 	},
+    /** Returns if the specified rectangles are overlapped with each other.
+     * @param Offset ofs1 the offset of the first rectangle
+     * @param Offset dim1 the dimension (size) of the first rectangle
+     * @param Offset ofs2 the offset of the second rectangle
+     * @param Offset dim2 the dimension (size) of the second rectangle
+     * @return boolean
+     */
 	/** Returns if the specified rectangles are overlapped with each other.
 	 * @param Offset ofs1 the offset of the first rectangle
 	 * @param Offset dim1 the dimension (size) of the first rectangle
 	 * @param Offset ofs2 the offset of the second rectangle
 	 * @param Offset dim2 the dimension (size) of the second rectangle
+	 * @param int the tolerant value for the calculation
 	 * @return boolean
 	 */
-	isOverlapped: function (ofs1, dim1, ofs2, dim2) {
+	isOverlapped: function (ofs1, dim1, ofs2, dim2, tolerant) {
 		var o1x1 = ofs1[0], o1x2 = dim1[0] + o1x1,
 			o1y1 = ofs1[1], o1y2 = dim1[1] + o1y1;
 		var o2x1 = ofs2[0], o2x2 = dim2[0] + o2x1,
 			o2y1 = ofs2[1], o2y2 = dim2[1] + o2y1;
-		return o2x1 <= o1x2 && o2x2 >= o1x1 && o2y1 <= o1y2 && o2y2 >= o1y1;
+		if (tolerant) {
+		  return o2x1 <= o1x2 && o2x2 >= o1x1 && o2y1 <= o1y2 && o2y2 >= o1y1
+                 && o1x2 - o2x1 > tolerant && o2x2 - o1x1 > tolerant
+                 && o1y2 - o2y1 > tolerant && o2y2 - o1y1 > tolerant;
+		} else
+		  return o2x1 <= o1x2 && o2x2 >= o1x1 && o2y1 <= o1y2 && o2y2 >= o1y1;
 	},
 
 	/** Clears the current selection in the browser window.

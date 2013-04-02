@@ -38,7 +38,6 @@ import java.util.Set;
 import org.zkoss.io.Serializables;
 import org.zkoss.json.JavaScriptValue;
 import org.zkoss.lang.Classes;
-import org.zkoss.lang.Library;
 import org.zkoss.lang.Objects;
 import org.zkoss.lang.Strings;
 import org.zkoss.util.CollectionsX;
@@ -85,6 +84,7 @@ import org.zkoss.zk.ui.sys.HtmlPageRenders;
 import org.zkoss.zk.ui.sys.JsContentRenderer;
 import org.zkoss.zk.ui.sys.Names;
 import org.zkoss.zk.ui.sys.PropertiesRenderer;
+import org.zkoss.zk.ui.sys.StubComponent;
 import org.zkoss.zk.ui.sys.StubsComponent;
 import org.zkoss.zk.ui.sys.UiEngine;
 import org.zkoss.zk.ui.sys.WebAppCtrl;
@@ -165,7 +165,7 @@ implements Component, ComponentCtrl, java.io.Serializable {
 	/** Constructs a dummy component that is not associated
 	 * with any component definition.
 	 * @param useless an useless argument (it is ignored but used
-	 * to distinquish the default constructor)
+	 * to distinguish the default constructor)
 	 * @since 6.0.0
 	 */
 	protected AbstractComponent(boolean useless) {
@@ -317,7 +317,7 @@ implements Component, ComponentCtrl, java.io.Serializable {
 
 	/** Bind comp to this ID space (owned by this component).
 	 * Called only if IdSpace is implemented.
-	 * comp's ID must be unquie (and not auto id)
+	 * comp's ID must be unique (and not auto id)
 	 */
 	private void bindToIdSpace(Component comp) {
 		_auxinf.spaceInfo.fellows.put(comp.getId(), comp);
@@ -329,7 +329,7 @@ implements Component, ComponentCtrl, java.io.Serializable {
 		_auxinf.spaceInfo.fellows.remove(compId);
 	}
 
-	//-- Extra utlities --//
+	//-- Extra utilities --//
 	/** Returns the UI engine based on {@link #_page}'s getDesktop().
 	 * Don't call this method when _page is null.
 	 */
@@ -376,7 +376,7 @@ implements Component, ComponentCtrl, java.io.Serializable {
 					clearVirtualIdSpace(); //clear if being attached
 				else if (_page.getDesktop() != page.getDesktop())
 					throw new UiException("The new page must be in the same desktop: "+page);
-					//Not allow developers to access two desktops simutaneously
+					//Not allow developers to access two desktops simultaneously
 				checkIdSpacesDown(this, page);
 
 				//No need to check UUID since checkIdSpacesDown covers it
@@ -419,7 +419,7 @@ implements Component, ComponentCtrl, java.io.Serializable {
 	 * One possible but rare case: the component's
 	 * visual part at the client updates the visual representation
 	 * at the client and then notify the component at the server
-	 * to update its children accordingly. In this case, it is redudant
+	 * to update its children accordingly. In this case, it is redundant
 	 * if we ask UI Engine to send the updates to client.
 	 *
 	 * @param oldparent the parent before moved.
@@ -437,7 +437,7 @@ implements Component, ComponentCtrl, java.io.Serializable {
 			.getUiEngine().addMoved(this, oldparent, oldpg, newpg);
 	}
 
-	/** Ses the page without fixing IdSpace
+	/** Set the page without fixing IdSpace
 	 */
 	private void setPage0(Page page) {
 		if (page == _page)
@@ -450,7 +450,8 @@ implements Component, ComponentCtrl, java.io.Serializable {
 		if (_page != null) {
 			if (bRoot) ((AbstractPage)_page).removeRoot(this);
 			if (page == null
-			&& ((DesktopCtrl)_page.getDesktop()).removeComponent(this, true))
+			&& ((DesktopCtrl)_page.getDesktop()).removeComponent(this, true)
+			&& !(this instanceof StubComponent)) //Bug ZK-1452: don't need to reset StubComponent's uuid
 				resetUuid = true; //recycled (so reset it -- refer to DesktopImpl for reason)
 		}
 
@@ -1150,7 +1151,7 @@ implements Component, ComponentCtrl, java.io.Serializable {
 		if (comp != null) comp._next = next;
 		else _chdinf.first = next;
 	}
-	/** Set the prev sibling of the given child. (this is a parent of comp). */
+	/** Set the previous sibling of the given child. (this is a parent of comp). */
 	/*package*/ final
 	void setPrev(AbstractComponent comp, AbstractComponent prev) {
 		if (comp != null) comp._prev = prev;
@@ -1394,7 +1395,7 @@ implements Component, ComponentCtrl, java.io.Serializable {
 	 * It is the same as <code>response(response.getOverrideKey(), response)</code>
 	 *
 	 * <p>If {@link AuResponse#getDepends} is not null, the response
-	 * depends on the existence of the componet returned by
+	 * depends on the existence of the component returned by
 	 * {@link AuResponse#getDepends}.
 	 * In other words, the response is removed if the component is removed.
 	 * If it is null, the response is component-independent and it is
@@ -1517,7 +1518,7 @@ implements Component, ComponentCtrl, java.io.Serializable {
 	 * If it is {@link org.zkoss.zk.au.DeferredValue}, the value
 	 * will be retrieved (by calling {@link org.zkoss.zk.au.DeferredValue#getValue})
 	 * in the rendering phase. It is useful if the value can not be determined now.
-	 * <p>For some old application servers (example, Webshpere 5.1),
+	 * <p>For some old application servers (example, Websphere 5.1),
 	 * {@link Execution#encodeURL} cannot be called in the event processing
 	 * thread. So, the developers have to use {@link org.zkoss.zk.au.DeferredValue}
 	 * or disable the use of the event processing thread
@@ -1527,7 +1528,7 @@ implements Component, ComponentCtrl, java.io.Serializable {
 	 * {@link JavaScriptValue}. Notice that the JavaScript code will be evaluated
 	 * before assigning it to the widget.
 	 * <p>If the value is a Date object, a special pattern will be generated
-	 * (aka., marshaling)
+	 * (a.k.a., marshaling)
 	 * to ensure it can be unmarshalled back correctly at the client.
 	 * Notice that it is marshalled to a string based
 	 * on {@link org.zkoss.util.TimeZones#getCurrent}, and then
@@ -1713,7 +1714,7 @@ implements Component, ComponentCtrl, java.io.Serializable {
 		onListenerChange(page.getDesktop(), false);
 	}
 
-	/** Returns the widget class (aka., widget type), or null if not defined.
+	/** Returns the widget class (a.k.a., widget type), or null if not defined.
 	 * <p>Default: return the widget class based on the current mold
 	 * (by use of {@link ComponentDefinition#getWidgetClass}), or null
 	 * if not found.
@@ -1856,7 +1857,7 @@ w:use="foo.MyWindow"&gt;
 		return exec != null && exec.isAsyncUpdate(_page);
 	}
 
-	/** Redraws childrens (and then recursively descandants).
+	/** Redraws children (and then recursively descendants).
 	 * <p>Default: it invokes {@link #redraw} for all its children.
 	 * <p>If a derived class renders only a subset of its children
 	 * (such as paging/cropping), it could override {@link #redrawChildren}.
@@ -1998,7 +1999,7 @@ w:use="foo.MyWindow"&gt;
 		return Collections.emptyMap();
 	}
 	/** Adds an event that the client might send to the server.
-	 * {@link #addClientEvent} is usally called in the <code>static</code> clause
+	 * {@link #addClientEvent} is usually called in the <code>static</code> clause
 	 * when the class is loaded. For example,
 	 * <pre><code>public class MyWidget extends HtmlBasedComponent {
 	 *  static {
@@ -2009,13 +2010,13 @@ w:use="foo.MyWindow"&gt;
 	 * <p>For a programming language not easy to have the <code>static</code>
 	 * clause (such as Scala), {@link #addClientEvent} can be called in
 	 * the constructors. Notice that it is better not to add the client event
-	 * later than the contructor, since the derived classes will copy
+	 * later than the constructor, since the derived classes will copy
 	 * the client events defined in the base class, when the first time
 	 * {@link #addClientEvent} is called with the class.
 	 *
 	 * <h3>Version History</h3>
-	 * <p>Since 5.0.4, it can be called in contructors
-	 * (in additions to the static clause). On othe thand, it can only
+	 * <p>Since 5.0.4, it can be called in constructors
+	 * (in additions to the static clause). On other hand, it can only
 	 * be called in the static clause (executed when the class is loaded)
 	 * in the prior version.
 	 * @param cls the component's class (implementation class).
@@ -2111,9 +2112,12 @@ w:use="foo.MyWindow"&gt;
 		final Desktop desktop;
 		if (!found && (desktop = getDesktop()) != null) {
 			if (Events.ON_CLIENT_INFO.equals(evtnm)) {
+				desktop.setAttribute("org.zkoss.desktop.clientinfo.enabled", true);
 				response(new AuClientInfo(desktop));
 			} else if (Events.ON_PIGGYBACK.equals(evtnm)) {
 				((DesktopCtrl)desktop).onPiggybackListened(this, true);
+			} else if (Events.ON_VISIBILITY_CHANGE.equals(evtnm)) {
+				desktop.setAttribute("org.zkoss.desktop.visibilitychange.enabled", true);
 			} else if (getClientEvents().containsKey(evtnm)) {
 				final boolean asap = Events.isListened(this, evtnm, true);
 				if (lis.size() == 1 || oldasap != asap)
@@ -2359,12 +2363,16 @@ w:use="foo.MyWindow"&gt;
 	}
 	private void onListenerChange(Desktop desktop, boolean listen) {
 		if (listen) {
-			if (Events.isListened(this, Events.ON_CLIENT_INFO, false)) //asap+deferrable
+			if (Events.isListened(this, Events.ON_CLIENT_INFO, false)) {//asap+deferrable
 				response(new AuClientInfo(desktop));
+				getDesktop().setAttribute("org.zkoss.desktop.clientinfo.enabled", true);
 				//We always fire event not a root, since we don't like to
 				//check when setParent or setPage is called
+			}
 			if (Events.isListened(this, Events.ON_PIGGYBACK, false))
 				((DesktopCtrl)desktop).onPiggybackListened(this, true);
+			if (Events.isListened(this, Events.ON_VISIBILITY_CHANGE, false))
+				getDesktop().setAttribute("org.zkoss.desktop.visibilitychange.enabled", true);
 		} else {
 			if (!Events.isListened(this, Events.ON_PIGGYBACK, false))
 				((DesktopCtrl)desktop).onPiggybackListened(this, false);
@@ -2539,9 +2547,10 @@ w:use="foo.MyWindow"&gt;
 	 * @param c a collection of objects. Ignored if null.
 	 * @since 3.6.4
 	 */
+	@SuppressWarnings("unchecked")
 	protected void willPassivate(Collection<?> c) {
 		if (c != null)
-			for (Iterator it = c.iterator(); it.hasNext();)
+			for (Iterator it = new ArrayList(c).iterator(); it.hasNext();)
 				willPassivate(it.next());
 	}
 	/** Utility to invoke {@link ComponentActivationListener#willPassivate}
@@ -2559,9 +2568,10 @@ w:use="foo.MyWindow"&gt;
 	 * @param c a collection of objects. Ignored if null.
 	 * @since 3.6.4
 	 */
+	@SuppressWarnings("unchecked")
 	protected void didActivate(Collection<?> c) {
 		if (c != null)
-			for (Iterator it = c.iterator(); it.hasNext();)
+			for (Iterator it = new ArrayList(c).iterator(); it.hasNext();)
 				didActivate(it.next());
 	}
 	/** Utility to invoke {@link ComponentActivationListener#didActivate}
@@ -2615,7 +2625,7 @@ w:use="foo.MyWindow"&gt;
 
 	/** Handles an AU request. It is invoked internally.
 	 *
-	 * <p>Default: it handles echo and setAttr, and it convests other request
+	 * <p>Default: it handles echo and setAttr, and it converts other request
 	 * to an event (by {@link Event#getEvent}) and then posts the event
 	 * (by {@link Events#postEvent}).
 	 *
@@ -2743,7 +2753,7 @@ w:use="foo.MyWindow"&gt;
 	 * (by invoking zk.Widget's smartUpdate at client).
 	 *
 	 * <p>By default, it does nothing but log a warning message, since
-	 * it is not safe to allow the client to update a field arbitary.
+	 * it is not safe to allow the client to update a field arbitrary.
 	 * <p>However, if you'd like to allow the update for a particular component
 	 * you could do one of the following
 	 * <ol>
@@ -2762,7 +2772,7 @@ w:use="foo.MyWindow"&gt;
 	 * <p>Notice: this method will invoke {@link #disableClientUpdate} to
 	 * disable any update to the client, when calling the setter.
 	 *
-	 * <p>If you wanto enable the client update for all instances of a given
+	 * <p>If you want to enable the client update for all instances of a given
 	 * component (though not recommended for the security reason), you could
 	 * refer to <a href="http://books.zkoss.org/wiki/Small_Talks/2011/May/New_Features_of_ZK_5.0.7#Client-side_smartUpdate_now_disabled_by_default">here</a>.
 	 *
@@ -2790,14 +2800,14 @@ w:use="foo.MyWindow"&gt;
 					m = Classes.getCloseMethod(getClass(), mtdnm, new Class[] {null});
 				} catch (NoSuchMethodException e3) {
 					log.warningBriefly("setter not found", ex);
-					return; //ingore it
+					return; //ignore it
 				}
 			}
 			try {
 				args[0] = Classes.coerce(m.getParameterTypes()[0], value);
 			} catch (Throwable e2) {
 				log.warning(m+" requires "+m.getParameterTypes()[0]+", not "+value);
-				return; //ingore it
+				return; //ignore it
 			}
 		}
 
@@ -3237,7 +3247,7 @@ w:use="foo.MyWindow"&gt;
 		return Selectors.iterable(this, selector);
 	}
 
-	/** Merge multiple memembers into an single object (and create on demand)
+	/** Merge multiple members into an single object (and create on demand)
 	 * to minimize the footprint
 	 * @since 5.0.4
 	 */
@@ -3268,7 +3278,7 @@ w:use="foo.MyWindow"&gt;
 
 		/** The widget class. */
 		private String wgtcls;
-		/** A map of client event hanlders, Map(String evtnm, String script). */
+		/** A map of client event handlers, Map(String evtnm, String script). */
 		private Map<String, String> wgtlsns;
 		/** A map of client properties to override, Map(String name, String script). */
 		private Map<String, String> wgtovds;
@@ -3280,7 +3290,7 @@ w:use="foo.MyWindow"&gt;
 		/** The templates. */
 		private Map<String, Template> templates;
 
-		/** Whether this component is stub-only (0: inheirt, -1: false, 1: true). */
+		/** Whether this component is stub-only (0: inherit, -1: false, 1: true). */
 		private byte stubonly;
 
 		/** Whether annots is shared with other components. */

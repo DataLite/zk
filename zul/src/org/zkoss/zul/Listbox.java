@@ -91,7 +91,7 @@ import org.zkoss.zul.impl.XulElement;
  * </p>
  *
  * <p>
- * Besides creating {@link Listitem} programmingly, you could assign a data
+ * Besides creating {@link Listitem} programmatically, you could assign a data
  * model (a {@link ListModel} or {@link GroupsModel} instance) to a listbox via
  * {@link #setModel(ListModel)} or {@link #setModel(GroupsModel)} and then the
  * listbox will retrieve data via {@link ListModel#getElementAt} when necessary.
@@ -587,7 +587,7 @@ public class Listbox extends MeshElement {
 
 	/**
 	 * Returns whether to grow and shrink vertical to fit their given space, so
-	 * called vertial flexibility.
+	 * called vertical flexibility.
 	 *
 	 * <p>
 	 * Note: this attribute is ignored if {@link #setRows} is specified
@@ -608,7 +608,7 @@ public class Listbox extends MeshElement {
 
 	/**
 	 * Sets whether to grow and shrink vertical to fit their given space, so
-	 * called vertial flexibility.
+	 * called vertical flexibility.
 	 *
 	 * <p>
 	 * Note: this attribute is ignored if {@link #setRows} is specified
@@ -905,6 +905,8 @@ public class Listbox extends MeshElement {
 					final int offset = _jsel - _jsel % getPageSize();
 					final int limit = getPageSize();
 					getDataLoader().syncModel(offset, limit); // force reloading
+					if (_jsel != jsel) //Bug ZK-1537: _jsel changed after syncModel if model is never synchronized
+						_jsel = jsel;
 				} else {
 					smartUpdate("selInView_", _jsel);
 				}
@@ -1172,7 +1174,7 @@ public class Listbox extends MeshElement {
 	 *
 	 * <p>
 	 * If mold is "paging", this method never returns null, because a child
-	 * paging controller is created automcatically (if not specified by
+	 * paging controller is created automatically (if not specified by
 	 * developers with {@link #setPaginal}).
 	 *
 	 * <p>
@@ -1243,6 +1245,9 @@ public class Listbox extends MeshElement {
 	private class PGListener implements SerializableEventListener<PagingEvent>,
 			CloneableEventListener<PagingEvent> {
 		public void onEvent(PagingEvent event) {
+			//Bug ZK-1622: reset anchor position after changing page
+			_anchorTop = 0;
+			_anchorLeft = 0;
 			Events.postEvent(new PagingEvent(event.getName(),
 				Listbox.this, event.getPageable(), event.getActivePage()));
 		}
@@ -2240,13 +2245,13 @@ public class Listbox extends MeshElement {
 			if (_model != model) {
 				if (_model != null) {
 					_model.removeListDataListener(_dataListener);
+					/* Bug ZK-1512: should clear listitem anyway
 					if (_model instanceof GroupsListModel)
-						getItems().clear();
+						getItems().clear();*/
 
 					resetDataLoader(); // Bug 3357641
-				} else {
-					getItems().clear(); // Bug 1807414
 				}
+				getItems().clear(); // Bug 1807414, ZK-1512
 				
 				if (!inSelectMold()) {
 					smartUpdate("model", model instanceof GroupsListModel || model instanceof GroupsModel ? "group" : true);

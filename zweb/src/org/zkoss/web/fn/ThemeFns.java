@@ -17,15 +17,24 @@ Copyright (C) 2012 Potix Corporation. All Rights Reserved.
 package org.zkoss.web.fn;
 
 import java.awt.Color;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
 
+import org.zkoss.lang.Library;
 import org.zkoss.lang.Strings;
 import org.zkoss.util.logging.Log;
 import org.zkoss.util.resource.Locators;
 import org.zkoss.web.servlet.Servlets;
+import org.zkoss.web.theme.StandardTheme;
+import org.zkoss.web.theme.Theme;
+import org.zkoss.web.theme.ThemeRegistry;
+import org.zkoss.web.theme.ThemeResolver;
 import org.zkoss.web.util.resource.ClassWebResource;
 
 /**
@@ -53,6 +62,10 @@ public class ThemeFns {
 		}
 		number = Servlets.getBrowser(ServletFns.getCurrentRequest(), "webkit");
 		if (number != null) {
+			Double android = Servlets.getBrowser(ServletFns.getCurrentRequest(), "android");
+			if (android != null && android < 3) {
+				return Browser.Old_WebKit;
+			}
 			Double version = Servlets.getBrowser(
 					ServletFns.getCurrentRequest(), "chrome");
 			if (version != null) {
@@ -61,6 +74,13 @@ public class ThemeFns {
 				if (version >= 1)
 					return Browser.Old_WebKit;
 			}
+
+			// B65-ZK-1614: Full Screen iPad Web Apps Missing Component Buttons
+			version = Servlets.getBrowser(ServletFns.getCurrentRequest(),
+					"ios");
+			if (version != null && version >= 500)
+				return Browser.WebKit;
+			
 			version = Servlets.getBrowser(ServletFns.getCurrentRequest(),
 					"safari");
 			if (version != null) {
@@ -131,7 +151,7 @@ public class ThemeFns {
 				boolean hex = color.startsWith("#");
 
 				int end = hex ? color.indexOf(" ") + 1 : color.indexOf(")") + 1;
-				if (end == 0)
+				if (end == 0 && !color.toLowerCase().contains("transparent"))
 					if (hex)
 						throw new IllegalArgumentException(
 								"The format of hexadecimal is wrong! [" + color
@@ -362,8 +382,10 @@ public class ThemeFns {
 	 * @param path a file path
 	 */
 	public static void loadProperties(String path) {
+		// add ability to load theme properties from a folder
+		// @since 6.5.2
 		if (!ThemeProperties.loadProperties(ServletFns.getCurrentRequest(), 
-				locate(path))) {
+				locate(ServletFns.resolveThemeURL(path)))) {
 			log("The properties file is not loaded correctly! [" + path + "]");
 		}
 	}
@@ -441,4 +463,94 @@ public class ThemeFns {
 		}
 	}
 
+	// the current theme registry
+	private static ThemeRegistry _themeRegistry = null;
+	// the current theme resolver
+	private static ThemeResolver _themeResolver = null;
+	
+	/**
+	 * Returns the current theme registry
+	 * 
+	 * @return the current theme registry
+	 * @since 6.5.2
+	 */
+	public static ThemeRegistry getThemeRegistry() {
+		return _themeRegistry;
+	}
+	
+	/**
+	 * Change the theme registry
+	 * 
+	 * @param themeRegistry the new theme registry
+	 * @since 6.5.2
+	 */
+	public static void setThemeRegistry(ThemeRegistry themeRegistry) {
+		_themeRegistry = themeRegistry;
+	}
+	
+	/**
+	 * Returns the current theme resolver
+	 * 
+	 * @return the current theme resolver
+	 * @since 6.5.2
+	 */
+	public static ThemeResolver getThemeResolver() {
+		return _themeResolver;
+	}
+	
+	/**
+	 * Change the current theme resolver
+	 * 
+	 * @param themeResolver the new theme resolver
+	 */
+	public static void setThemeResolver(ThemeResolver themeResolver) {
+		_themeResolver = themeResolver;
+	}
+	
+	private final static String THEME_PREFERRED_KEY = "org.zkoss.theme.preferred";
+	
+	/**
+	 * Returns the current theme name
+	 * 
+	 * @return the current theme name
+	 * @since 6.5.2
+	 */
+	public static String getCurrentTheme() {
+		// 1. cookie's key
+		String t = getTheme();
+		if (_themeRegistry.hasTheme(t))
+			return t;
+		
+		// 2. library property
+		t = Library.getProperty(THEME_PREFERRED_KEY);
+		if (_themeRegistry.hasTheme(t))
+			return t;
+		
+		// 3. theme of highest priority
+		Theme[] themes = _themeRegistry.getThemes();
+		StandardTheme highest = null;
+		Comparator<StandardTheme> comparator = StandardTheme.getComparator();
+		for (Theme theme : themes) {
+			if (theme instanceof StandardTheme) {
+				if (comparator.compare((StandardTheme)theme, highest) < 0) {
+					highest = (StandardTheme)theme;
+				}
+			}
+		}		
+		return (highest != null) ? highest.getName() : StandardTheme.DEFAULT_NAME;
+	}
+	
+	/**
+	 * Returns the theme specified in cookies
+	 * @return the name of the theme or default theme.
+	 */
+	private static String getTheme() {
+		ServletRequest request = ServletFns.getCurrentRequest();
+		
+		if (!(request instanceof HttpServletRequest))
+			return StandardTheme.DEFAULT_NAME;
+		
+		return _themeResolver.getTheme((HttpServletRequest)request);
+	}
+	
 }

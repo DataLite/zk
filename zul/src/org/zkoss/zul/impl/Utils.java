@@ -16,25 +16,24 @@ Copyright (C) 2007 Potix Corporation. All Rights Reserved.
 */
 package org.zkoss.zul.impl;
 
-import java.util.List;
-import java.util.LinkedList;
-import java.util.Iterator;
-import java.io.Writer;
 import java.io.IOException;
+import java.io.Writer;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.zkoss.lang.Library;
 import org.zkoss.lang.Strings;
 import org.zkoss.mesg.Messages;
 import org.zkoss.xml.XMLs;
-
-import org.zkoss.zk.ui.Executions;
-import org.zkoss.zk.ui.Execution;
-import org.zkoss.zk.ui.Desktop;
-import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.AbstractComponent;
+import org.zkoss.zk.ui.Component;
+import org.zkoss.zk.ui.Desktop;
+import org.zkoss.zk.ui.Execution;
+import org.zkoss.zk.ui.Executions;
+import org.zkoss.zk.ui.WebApps;
 import org.zkoss.zk.ui.WrongValueException;
 import org.zkoss.zk.ui.sys.HtmlPageRenders;
-
 import org.zkoss.zul.mesg.MZul;
 
 /**
@@ -133,7 +132,7 @@ public class Utils {
 
 		return list.toArray(new String[list.size()]);
 	}
-	/** Converts an array of objects to a string, by catenating them
+	/** Converts an array of objects to a string, by concatenating them
 	 * together and separated with comma.
 	 */
 	public static final String arrayToString(Object[] ary) {
@@ -182,6 +181,21 @@ public class Utils {
 		return desktop.getDynamicMediaURI(comp, sb.toString()); //already encoded
 	}
 
+	/**
+	 * Generates the ZK feature information
+	 * @since 6.5.1
+	 */
+	public static final String outFeature() {
+		final StringBuffer sb = new StringBuffer(32);
+		sb.append("if(!zk.feature)zk.feature = {standard:true");
+		if (WebApps.getFeature("ee"))
+			sb.append(",ee:true");
+		else if (WebApps.getFeature("pe"))
+			sb.append(",pe:true");
+		sb.append("};");
+		return sb.toString();
+	}
+	
 	/** Generates the locale-dependent JavaScript codes, such as messages
 	 * (msgzul).
 	 * <p>It is called by zul/lang/zk.wpd.
@@ -299,7 +313,7 @@ public class Utils {
 
 	/** Returns the component of the specified ID or UUID.
 	 * ID could be the component's ID or UUID.
-	 * To specify an UUID, it must be the fortmat: <code>uuid(comp_uuid)</code>.
+	 * To specify an UUID, it must be the format: <code>uuid(comp_uuid)</code>.
 	 * @return the component, or null if not found
 	 * @since 5.0.4
 	 */

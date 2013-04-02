@@ -274,7 +274,11 @@ zul.sel.SelectWidget = zk.$extends(zul.mesh.MeshWidget, {
 			this.clearSelection();
 		else {
 			this._selectOne(item, true);
-			zk(item).scrollIntoView(this.ebody);
+			
+			// Bug ZK-1483: Jumpy scrollbar for listbox with rod when items are selected
+			if (!this._listbox$rod)
+				zk(item).scrollIntoView(this.ebody);
+			
 			if (zk.ff >= 4 && this.ebody) { // B50-ZK-293: FF5 misses to fire onScroll
 				// B50-ZK-440: ebody can be null when ROD
 				this._currentTop = this.ebody.scrollTop; 
@@ -440,7 +444,7 @@ zul.sel.SelectWidget = zk.$extends(zul.mesh.MeshWidget, {
 
 		if (nRows) {
 			if (!hgh) {
-				if (!nVisiRows) hgh = this._headHgh(20) * nRows;
+				if (!nVisiRows) hgh = this._headHgh(20, true) * nRows;
 				else if (nRows <= nVisiRows) {
 					var $midVisiRow = zk(midVisiRow);
 					hgh = $midVisiRow.offsetTop() + $midVisiRow.offsetHeight();
@@ -537,9 +541,11 @@ zul.sel.SelectWidget = zk.$extends(zul.mesh.MeshWidget, {
 		} else
 			return this.getRows() || this._visiRows || 0;
 	},
-	/* Height of the head row. If now header, defval is returned. */
-	_headHgh: function (defVal) {
-		var hgh = this.ehead ? this.ehead.offsetHeight : 0;
+	/* Height of the head row. If no header, defval is returned. */
+	_headHgh: function (defVal, isExcludeAuxhead) {
+		var headWidget = this.getHeadWidget(), //Bug ZK-1297: get head height exclude auxhead
+			head = this.ehead,
+			hgh = isExcludeAuxhead ? (headWidget ? headWidget.$n().offsetHeight : 0) : (head ? head.offsetHeight : 0);
 		if (this.paging) {
 			var pgit = this.$n('pgit'),
 				pgib = this.$n('pgib');
@@ -953,8 +959,11 @@ zul.sel.SelectWidget = zk.$extends(zul.mesh.MeshWidget, {
 	_doRight: zk.$void,
 	/* maintain the offset of the focus proxy*/
 	_syncFocus: function (row) {
-		var focusEl = this.$n('a'),
-			focusElStyle = focusEl.style,
+		var focusEl = this.$n('a');
+		if (!focusEl) //Bug ZK-1480: widget may not rendered when ROD enabled
+			return;
+		
+		var focusElStyle = focusEl.style,
 			oldTop = this._anchorTop,
 			oldLeft = this._anchorLeft,
 			offs, n;
@@ -1216,6 +1225,16 @@ zul.sel.SelectWidget = zk.$extends(zul.mesh.MeshWidget, {
 		this.$supers('onChildAdded_', arguments);
 		if (this.desktop && child.$instanceof(zul.sel.ItemWidget) && child.isSelected())
 			this._syncFocus(child);
+		//Bug ZK-1473: when using template to render listbox,
+		//   this._focusItem still remain the removed one, 
+		//   set it with the newly rendered one to prevent keyboard navigation jump back to top
+		var n, offs;
+		if (this._focusItem != child && (n = child.$n())) {
+			offs = zk(n).revisedOffset();
+			offs = this._toStyleOffset(this.$n('a'), offs[0] + this.ebody.scrollLeft, offs[1]);
+			if (offs[0] == this._anchorLeft && offs[1] == this._anchorTop)
+				this._focusItem = child;
+		}
 	},
 	//@Override
 	onChildRemoved_: function (child) {

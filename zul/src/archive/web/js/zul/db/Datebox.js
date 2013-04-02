@@ -221,7 +221,7 @@ zul.db.Datebox = zk.$extends(zul.inp.FormatWidget, {
 		 * @return Array
 		 */
 		displayedTimeZones: function (dtzones) {
-			this._dtzones = dtzones.split(",");
+			this._dtzones = dtzones ? dtzones.split(",") : null;
 		},
 		/** Sets the unformater function. This method is called from Server side.
 		 * @param String unf the unformater function
@@ -788,7 +788,7 @@ zul.db.CalendarTime = zk.$extends(zul.db.Timebox, {
 });
 
 
-/** @class zk.DateboxCtrl
+/** @class zul.db.DateboxCtrl
  * @import zk.Widget
  * The extra control for the Datebox.
  * It is designed to be overriden

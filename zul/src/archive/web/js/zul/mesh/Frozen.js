@@ -128,6 +128,7 @@ zul.mesh.Frozen = zk.$extends(zul.Widget, {
 	onSize: function () {
 		if (!this._columns) return;
 		var self = this;
+		self._syncFrozen(); // B65-ZK-1470
 		// Bug 3218078, to do the sizing after the 'setAttr' command
 		setTimeout(function () {
 			_onSizeLater(self);
@@ -324,8 +325,8 @@ zul.mesh.Frozen = zk.$extends(zul.Widget, {
 
 		mesh._restoreFocus();
 		
-		// Bug ZK-601
-		if (zk.ie == 8)
+		// Bug ZK-601, Bug ZK-1572
+		if (zk.ie == 8 || zk.ie == 9)
 			zk(mesh).redoCSS();
 	}
 });

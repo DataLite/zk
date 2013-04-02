@@ -176,7 +176,7 @@ zul.wgt.Button = zk.$extends(zul.LabelImageWidget, {
 		    	}
 		    	return v;
 		    }, 
-		    function (v) {
+		    function (v, opts) {
 		    	if (this.desktop) {
 		    		if (this._mold == "os") {
 		    			var n = this.$n(),
@@ -184,7 +184,7 @@ zul.wgt.Button = zk.$extends(zul.LabelImageWidget, {
 		    			if (zclass)
 		    				jq(n)[(n.disabled = v) ? "addClass": "removeClass"](zclass + "-disd");
 		    		} else
-		    			this.rerender(); //bind and unbind required (because of many CSS classes to update)
+		    			this.rerender(opts && opts.skip ? -1 : 0); //bind and unbind required (because of many CSS classes to update)
 		    	}
 		    }
 		],
@@ -303,9 +303,21 @@ zul.wgt.Button = zk.$extends(zul.LabelImageWidget, {
 		return this;
 	},
 	focus_: function (timeout) {
+		// Bug ZK-1295: Disabled buttons cannot regain focus by re-enabling and then setting focus
+		var wgt = this,
+			btn = this.$n('btn') || this.$n();
+		if (btn.disabled && !wgt._delayFocus) {
+			wgt._delayFocus = true;
+			setTimeout(function() {
+				wgt.focus_(timeout);
+			}, 0);
+		} else {
+			wgt._delayFocus = null;
+		}
+		
 		//Bug ZK-354: refer to _docMouseDown in mount.js for details
 		if (!zk.focusBackFix || !this._upload)
-			zk(this.$n('btn')||this.$n()).focus(timeout);
+			zk(btn).focus(timeout);
 		return true;
 	},
 
@@ -524,7 +536,7 @@ zul.wgt.ADBS = zk.$extends(zk.Object, {
 	onResponse: function () {
 		for (var ads = this._ads, ad; ad = ads.shift();)
 			// B60-ZK-1176: distinguish from other usages
-			ad.setDisabled(false, {adbs: false});
+			ad.setDisabled(false, {adbs: false, skip: true});
 		zWatch.unlisten({onResponse: this});
 	}
 },{ //static
@@ -550,7 +562,7 @@ zul.wgt.ADBS = zk.$extends(zk.Object, {
 					}
 					if (ad && !ad._disabled) {
 						// B60-ZK-1176: distinguish from other usages
-						ad.setDisabled(true, {adbs: true});
+						ad.setDisabled(true, {adbs: true, skip: true});
 						if (wgt.inServer)
 							if (perm)
 								ad.smartUpdate('disabled', true);

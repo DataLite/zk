@@ -180,10 +180,17 @@ zul.inp.ComboWidget = zk.$extends(zul.inp.InputWidget, {
 		// throw in
 		pp.style.left = "";
 		this._fixsz(ppofs);//fix size
+		
+		// given init position
 		$pp.position(inp, "after_start");
+		
+		// B65-ZK-1588
+		if(jq(pp).position().top < jq(inp).position().top + zk(inp).offsetHeight()) {
+			$pp.position(inp, "before_start");
+		}
+		
 		pp.style.display = "none";
 		pp.style.visibility = "";
-
 		this.slideDown_(pp);
 
 		//FF issue:
@@ -359,41 +366,6 @@ zul.inp.ComboWidget = zk.$extends(zul.inp.InputWidget, {
 	getPopupSize_: function (pp) {
 		return ['auto', 'auto'];
 	},
-
-	/** Utility to implement {@link #redraw}. 
-	 *  @param Array out an array of HTML fragments.
-	 */
-	redraw_: function (out) {
-		var uuid = this.uuid,
-			zcls = this.getZclass(),
-			isButtonVisible = this._buttonVisible;
-			
-		out.push('<i', this.domAttrs_({text:true}), '><input id="',
-			uuid, '-real" class="', zcls, '-inp');
-			
-		if(!isButtonVisible)
-			out.push(' ', zcls, '-right-edge');
-			
-		out.push('" autocomplete="off"',
-			this.textAttrs_(), '/><i id="', uuid, '-btn" class="',
-			zcls, '-btn');
-
-		if (this.inRoundedMold()) {
-			if (!isButtonVisible)
-				out.push(' ', zcls, '-btn-right-edge');
-			if (this._readonly)
-				out.push(' ', zcls, '-btn-readonly');	
-			if (zk.ie6_ && !isButtonVisible && this._readonly)
-				out.push(' ', zcls, '-btn-right-edge-readonly');
-		} else if (!isButtonVisible)
-			out.push('" style="display:none');
-
-		out.push('"><div class="', zcls, '-btn-icon"></div></i>');
-
-		this.redrawpp_(out);
-
-		out.push('</i>');
-	},
 	/** Called by {@link #redraw_} to redraw popup.
 	 * <p>Default: does nothing
 	 *  @param Array out an array of HTML fragments.
@@ -547,5 +519,41 @@ zul.inp.ComboWidget = zk.$extends(zul.inp.InputWidget, {
 		if (this._shadow) this._shadow.sync();
 	},
 	onChildRemoved_: _zkf,
-	onChildVisible_: _zkf
+	onChildVisible_: _zkf,
+	/** Utility to implement {@link #redraw}. 
+	 *  @param Array out an array of HTML fragments.
+	 */
+	redraw_: _zkf = function (out) {
+		var uuid = this.uuid,
+			zcls = this.getZclass(),
+			isButtonVisible = this._buttonVisible;
+			
+		out.push('<i', this.domAttrs_({text:true}), '><input id="',
+			uuid, '-real" class="', zcls, '-inp');
+			
+		if(!isButtonVisible)
+			out.push(' ', zcls, '-right-edge');
+			
+		out.push('" autocomplete="off"',
+			this.textAttrs_(), '/><i id="', uuid, '-btn" class="',
+			zcls, '-btn');
+
+		if (this.inRoundedMold()) {
+			if (!isButtonVisible)
+				out.push(' ', zcls, '-btn-right-edge');
+			if (this._readonly)
+				out.push(' ', zcls, '-btn-readonly');	
+			if (zk.ie6_ && !isButtonVisible && this._readonly)
+				out.push(' ', zcls, '-btn-right-edge-readonly');
+		} else if (!isButtonVisible)
+			out.push('" style="display:none');
+
+		out.push('"><div class="', zcls, '-btn-icon"></div></i>');
+
+		this.redrawpp_(out);
+
+		out.push('</i>');
+	}
+}, {
+	$redraw: _zkf
 });

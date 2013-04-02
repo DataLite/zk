@@ -16,22 +16,26 @@ Copyright (C) 2005 Potix Corporation. All Rights Reserved.
 */
 package org.zkoss.web.fn;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
-import java.io.IOException;
 
 import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
-import javax.servlet.ServletException;
 
+import org.zkoss.lang.Library;
 import org.zkoss.lang.Strings;
 import org.zkoss.web.servlet.Servlets;
-import org.zkoss.web.servlet.http.Encodes;
 import org.zkoss.web.servlet.dsp.DspException;
 import org.zkoss.web.servlet.dsp.action.ActionContext;
+import org.zkoss.web.servlet.http.Encodes;
 import org.zkoss.web.servlet.xel.RequestContext;
 import org.zkoss.web.servlet.xel.RequestContexts;
+import org.zkoss.web.theme.StandardTheme;
+import org.zkoss.web.theme.StandardTheme.ThemeOrigin;
+import org.zkoss.web.theme.Theme;
 
 /**
  * Providing servlet relevant functions for EL.
@@ -78,10 +82,40 @@ public class ServletFns {
 			throws ServletException {
 		if (s == null)
 			return null;
-		String theme = (String) getCurrentRequest().getAttribute("theme");
-		if (Strings.isBlank(theme))
-			return encodeURL(s);
-		return encodeURL(s.replace("~./", "~./" + theme + "/"));
+		
+		return encodeURL(resolveThemeURL(s));
+	}
+	
+	private final static String THEME_FOLDER_ROOT = "org.zkoss.theme.folder.root";
+	/**
+	 * Resolves a URL to point to resource served by the current theme. 
+	 * @param url the default theme url to resolve
+	 * @return the resolved url or null if url is null
+	 * @since 6.5.2
+	 */
+	public static final String resolveThemeURL(String url) {
+		if (url == null)
+			return null;
+		
+		String themeName = 
+			ThemeFns.getCurrentTheme();
+		String prefix =
+			Library.getProperty(THEME_FOLDER_ROOT, "theme");
+		
+		String resolved = null;
+		
+		if (Strings.isBlank(themeName) || StandardTheme.DEFAULT_NAME.equals(themeName))
+			resolved = url;
+		else {
+			Theme theme = ThemeFns.getThemeRegistry().getTheme(themeName);
+			if (theme instanceof StandardTheme) {
+				if (((StandardTheme)theme).getOrigin() == ThemeOrigin.JAR)
+					resolved = url.replaceFirst("~./", "~./" + themeName + "/");
+				else
+					resolved = url.replaceFirst("~./", "/" + prefix + "/" + themeName +"/");					
+			}
+		}
+		return resolved;
 	}
 
 	/** Returns whether the current request is from

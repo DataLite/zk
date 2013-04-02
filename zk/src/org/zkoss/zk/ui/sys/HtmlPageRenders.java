@@ -99,6 +99,12 @@ public class HtmlPageRenders {
 	/** Whether is allowed to generate content directly. */
 	private static final String ATTR_DIRECT_CONTENT
 		= "org.zkoss.zk.ui.directContent";
+	/** Enabled client info */
+	private static final String ATTR_DESKTOP_CLIENTINFO = "org.zkoss.desktop.clientinfo.enabled";
+	/** Enabled visibility change */
+	private static final String ATTR_DESKTOP_VISIBILITYCHANGE = "org.zkoss.desktop.visibilitychange.enabled";
+	/** Support Portlet 2.0 */
+	private static final String ATTR_PORTLET2_RESOURCEURL = "org.zkoss.portlet2.resourceURL";
 
 	/** Sets the content type to the specified execution for the given page.
 	 * @param exec the execution (never null)
@@ -193,7 +199,7 @@ public class HtmlPageRenders {
 
 		final StringBuffer sb = new StringBuffer(256);
 		if (!directJS)
-			sb.append("<script class=\"z-runonce\" type=\"text/javascript\">\nzkac(");
+			sb.append("<script class=\"z-runonce\" type=\"text/javascript\">//<![CDATA[\nzkac(");
 
 		for (Iterator<AuResponse> it = responses.iterator(); it.hasNext();) {
 			final AuResponse response = it.next();
@@ -213,7 +219,7 @@ public class HtmlPageRenders {
 		}
 
 		if (!directJS)
-			sb.append(");\n</script>");
+			sb.append(");//]]>\n</script>");
 		return sb.toString();
 	}
 
@@ -300,7 +306,7 @@ public class HtmlPageRenders {
 			groupingAllowed = isGroupingAllowed(desktop);
 		final String progressboxPos = org.zkoss.lang.Library.getProperty("org.zkoss.zul.progressbox.position", "");
 		if (tmout > 0 || keepDesktop || progressboxPos.length() > 0 || !groupingAllowed) {
-			sb.append("<script class=\"z-runonce\" type=\"text/javascript\">zkopt({");
+			sb.append("<script class=\"z-runonce\" type=\"text/javascript\">//<![CDATA[\nzkopt({");
 
 			if (keepDesktop)
 				sb.append("kd:1,");
@@ -313,14 +319,13 @@ public class HtmlPageRenders {
 
 			if (sb.charAt(sb.length() - 1) == ',')
 				sb.setLength(sb.length() - 1);
-			sb.append("});</script>");
+			sb.append("});//]]>\n</script>");
 		}
 
 		final Device device = Devices.getDevice(deviceType);
 		String s = device.getEmbedded();
 		if (s != null)
 			sb.append(s).append('\n');
-
 		return sb.toString();
 	}
 	private static Boolean getAutomaticTimeout(Desktop desktop) {
@@ -466,9 +471,9 @@ public class HtmlPageRenders {
 				sb.append(" charset=\"").append(charset).append('"');
 			sb.append('>');
 		} else {
-			sb.append(" class=\"z-runonce\">\n").append(js.getContent());
+			sb.append(" class=\"z-runonce\">//<![CDATA[\n").append(js.getContent()).append("//>]]\n");
 		}
-		sb.append("\n</script>");
+		sb.append("</script>");
 	}
 
 	/** Returns the render context, or null if not available.
@@ -490,7 +495,7 @@ public class HtmlPageRenders {
 	}
 
 	/** Returns the HTML content representing a page.
-	 * @param au whether it is caused by aynchrous update
+	 * @param au whether it is caused by asynchronous update
 	 * @param exec the execution (never null)
 	 */
 	public static final
@@ -500,7 +505,7 @@ public class HtmlPageRenders {
 		final PageCtrl pageCtrl = (PageCtrl)page;
 		final Component owner = pageCtrl.getOwner();
 		boolean contained = owner == null && exec.isIncluded();
-			//a standalong page (i.e., no owner), and being included by
+			//a standalone page (i.e., no owner), and being included by
 			//non-ZK page (e.g., JSP).
 			//
 			//Revisit Bug 2001707: OK to use exec.isIncluded() since
@@ -561,7 +566,7 @@ public class HtmlPageRenders {
 			out = new StringWriter();
 		} else if (divRequired) {
 			//generate JS second
-			out.write("\n<script class=\"z-runonce\" type=\"text/javascript\">");
+			out.write("\n<script class=\"z-runonce\" type=\"text/javascript\">//<![CDATA[\n");
 		}
 
 		exec.setAttribute(ATTR_DESKTOP_JS_GENED, Boolean.TRUE);
@@ -635,17 +640,36 @@ public class HtmlPageRenders {
 		if (includedAndPart) {
 			((Includer)owner).setRenderingResult(((StringWriter)out).toString());
 		} else if (divRequired) {
-			out.write("</script>\n");
+			out.write("//]]>\n</script>\n");
 		}
 	}
 	private static void outDivTemplateBegin(Writer out, String uuid)
 	throws IOException {
 		out.write("<div");
 		writeAttr(out, "id", uuid);
-		out.write(" class=\"z-temp\">");
+		out.write(" class=\"z-temp\"><div id=\"zk_proc\" class=\"z-loading\"><div class=\"z-loading-indicator\"><span class=\"z-loading-icon\"></span>Processing...</div></div>");
 	}
 	private static void outDivTemplateEnd(Page page, Writer out)
 	throws IOException {
+		final Desktop dt;
+		if (page != null && (dt = page.getDesktop()) != null) {
+			if (dt.getAttribute(ATTR_DESKTOP_CLIENTINFO) != null) {
+				dt.removeAttribute(ATTR_DESKTOP_CLIENTINFO);
+				if (!"CE".equals(WebApps.getEdition()))
+					out.write("<script type=\"text/javascript\">if(zk.clientinfo === undefined)zk.clientinfo = true;</script>");
+			}
+			if (dt.getAttribute(ATTR_DESKTOP_VISIBILITYCHANGE) != null) {
+				dt.removeAttribute(ATTR_DESKTOP_VISIBILITYCHANGE);
+				out.write("<script type=\"text/javascript\">if(zk.visibilitychange === undefined)zk.visibilitychange = true;</script>");
+			}
+			String resourceURL = (String) page.getAttribute(ATTR_PORTLET2_RESOURCEURL, Page.PAGE_SCOPE);
+			if(resourceURL != null) {
+				page.removeAttribute(ATTR_PORTLET2_RESOURCEURL, Page.PAGE_SCOPE);
+				out.write("<script type=\"text/javascript\">zk.portlet2AjaxURI = '");
+				out.write(resourceURL);
+				out.write("';</script>");
+			}
+		}
 		outSEOContent(page, out);
 		out.write("</div>");
 	}
@@ -803,9 +827,9 @@ public class HtmlPageRenders {
 	}
 	private static Boolean _groupingAllowed;
 		
-	/** Generates the content of a standalone componnent that
+	/** Generates the content of a standalone component that
 	 * the peer widget is not a child of the page widget at the client.
-	 * @param comp the compoent to render. It is null if no child component
+	 * @param comp the component to render. It is null if no child component
 	 * at all.
 	 */
 	public static final void outStandalone(Execution exec,
@@ -820,7 +844,7 @@ public class HtmlPageRenders {
 				outDivTemplateEnd(comp.getPage(), out);
 			}
 
-			out.write("<script class=\"z-runonce\" type=\"text/javascript\">\nzkmx(");
+			out.write("<script class=\"z-runonce\" type=\"text/javascript\">//<![CDATA[\nzkmx(");
 
 			if (comp != null)
 				((ComponentCtrl)comp).redraw(out);
@@ -832,7 +856,7 @@ public class HtmlPageRenders {
 
 		outEndJavaScriptFunc(exec, out, extra, false);
 			//generate extra, responses and ");"
-		out.write("\n</script>\n");
+		out.write("//]]>\n</script>\n");
 	}
 	private static final void writeAttr(Writer out, String name, String value)
 	throws IOException {
@@ -931,13 +955,13 @@ public class HtmlPageRenders {
 
 		final Desktop desktop = exec.getDesktop();
 		if (desktop != null && exec.getAttribute(ATTR_DESKTOP_JS_GENED) == null) {
-			sb.append("<script class=\"z-runonce\" type=\"text/javascript\">zkdt('")
+			sb.append("<script class=\"z-runonce\" type=\"text/javascript\">//<![CDATA[\nzkdt('")
 				.append(desktop.getId()).append("','")
 				.append(getContextURI(exec))
 				.append("','").append(desktop.getUpdateURI(null))
 				.append("','").append(desktop.getRequestPath())
 				.append("');").append(outSpecialJS(desktop))
-				.append("</script>\n");
+				.append("//]]>\n</script>\n");
 		}
 
 		return sb.toString();
@@ -994,7 +1018,7 @@ public class HtmlPageRenders {
 		public final Writer temp;
 		/** The writer used to generate the content that exists
 		 * even after the widgets have been rendered.
-		 * It is currenlty used only to generate CSS style.
+		 * It is currently used only to generate CSS style.
 		 * <p>It is null if the current page is included by another.
 		 */
 		public final Writer perm;

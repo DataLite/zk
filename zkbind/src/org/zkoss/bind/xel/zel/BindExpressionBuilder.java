@@ -24,7 +24,9 @@ import org.zkoss.bind.impl.BinderImpl;
 import org.zkoss.bind.impl.LoadFormBindingImpl;
 import org.zkoss.bind.sys.BinderCtrl;
 import org.zkoss.bind.sys.Binding;
+import org.zkoss.bind.sys.LoadChildrenBinding;
 import org.zkoss.bind.sys.LoadPropertyBinding;
+import org.zkoss.bind.sys.ReferenceBinding;
 import org.zkoss.bind.sys.SavePropertyBinding;
 import org.zkoss.bind.sys.tracker.Tracker;
 import org.zkoss.util.logging.Log;
@@ -44,7 +46,7 @@ import org.zkoss.zk.ui.Component;
 public class BindExpressionBuilder extends ExpressionBuilder {
 	
 	private static final Log _log = Log.lookup(BindExpressionBuilder.class);
-			
+	private static final String _isVisitedKey = BindExpressionBuilder.class+"_isVisted";
 	private final BindELContext _ctx;
     public BindExpressionBuilder(String expression, ELContext ctx) throws ELException {
 		super(expression, ctx);
@@ -72,7 +74,17 @@ public class BindExpressionBuilder extends ExpressionBuilder {
 	private void addTracking(List<String> series) {
 		final Binding binding = _ctx.getBinding();
 		final boolean dotracker = !_ctx.ignoreTracker();
+		
 		if (binding != null && series != null && !series.isEmpty()) {
+			
+			//to prevent unnecessary from-save in nested expression in from binding and cause save error
+			//e.g @bind(fx.hash[fx.key]) or @bind(vm.hash[fx.key]) 
+			
+			final Boolean isVisted = (Boolean)_ctx.getAttribute(_isVisitedKey);
+			if(!Boolean.TRUE.equals(isVisted)){
+				_ctx.setAttribute(_isVisitedKey, Boolean.TRUE);
+			}
+			
 			final Iterator<String> it = series.iterator();
 			final String prop = (String) it.next();
 			final Binder binder = binding.getBinder();
@@ -88,18 +100,20 @@ public class BindExpressionBuilder extends ExpressionBuilder {
 			if (base instanceof Form) {
 				final Form formBean = (Form) base;
 				final String fieldName = fieldName(it);
+				
 				if (fieldName != null) {
-					if (binding instanceof SavePropertyBinding) {
+					if (binding instanceof SavePropertyBinding && !Boolean.TRUE.equals(isVisted)) {
 						if(_log.debugable()){
-							_log.debug("add save-filed %s to form %s", fieldName,formBean);
+							_log.debug("add save-field '%s' to form '%s'", fieldName,formBean);
 						}
-						if(formBean instanceof FormExt){
+						if(formBean instanceof FormExt ){
 							((FormExt)formBean).addSaveFieldName(fieldName);
 						}
 						((BinderCtrl)binder).addFormAssociatedSaveBinding(comp, prop, (SavePropertyBinding)binding, fieldName);
-					} else if (binding instanceof LoadPropertyBinding) {
+					} else if (binding instanceof LoadPropertyBinding 
+							|| binding instanceof LoadChildrenBinding || binding instanceof ReferenceBinding) {
 						if(_log.debugable()){
-							_log.debug("add load-filed %s to form %s", fieldName,formBean);
+							_log.debug("add load-field '%s' to form '%s'", fieldName,formBean);
 						}
 						if(formBean instanceof FormExt){
 							((FormExt)formBean).addLoadFieldName(fieldName);
