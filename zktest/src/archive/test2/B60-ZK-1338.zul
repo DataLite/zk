@@ -17,9 +17,9 @@ Copyright (C) 2012 Potix Corporation. All Rights Reserved.
 <?script content="zk.log('if nothing in the page, that is a bug')"?>
 <zk xmlns:w="http://www.zkoss.org/2005/zk/client">
 <zscript><![CDATA[
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.zkoss.lang.Threads;
 import org.zkoss.web.util.resource.ClassWebResource;

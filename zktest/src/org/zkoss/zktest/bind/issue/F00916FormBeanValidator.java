@@ -2,7 +2,7 @@ package org.zkoss.zktest.bind.issue;
 
 import java.util.Date;
 
-import javax.validation.constraints.Past;
+import jakarta.validation.constraints.Past;
 
 import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.Length;

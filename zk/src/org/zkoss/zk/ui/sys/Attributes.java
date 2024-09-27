@@ -203,5 +203,5 @@ public class Attributes {
 	/** A session attribute used to store the ZK session in the native session. 
 	 * @since 5.0.8
 	 */
-	public static final String ZK_SESSION = "javax.zkoss.zk.ui.Session";
+	public static final String ZK_SESSION = "jakarta.zkoss.zk.ui.Session";
 }

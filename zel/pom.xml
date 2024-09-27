@@ -6,10 +6,15 @@
 	<groupId>org.zkoss.common</groupId>
 	<artifactId>zel</artifactId>
 	<packaging>jar</packaging>
-	<version>8.5.0</version>
+	<version>8.5.0_jakarta</version>
 	<name>The ZK EL Library</name>
 	<url>http://www.zkoss.org/common</url>
 	<description>The ZK EL library</description>
+
+	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+	</properties>
+
 	<licenses>
 		<license>
 			<name>Apache License, Version 2.0</name>
@@ -17,10 +22,12 @@
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
+
 	<scm>
 		<connection>scm:git:https://github.com/zkoss/zk.git</connection>
 		<url>http://mavensync.zkoss.org/maven2</url>
 	</scm>
+
 	<developers>
 		<developer>
 			<id>zkteam</id>
@@ -39,12 +46,14 @@
 			</properties>
 		</developer>
 	</developers>	
+
 	<repositories>
 		<repository>
 			<id>zk repository</id>
 			<url>http://mavensync.zkoss.org/maven2</url>
 		</repository>
 	</repositories>
+
 	<pluginRepositories>
 		<pluginRepository>
 			<id>zkmaven</id>
@@ -68,20 +77,22 @@
 			<url>http://repo1.maven.org/maven2</url>
 		</pluginRepository>
 	</pluginRepositories>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.5</version>
+			<version>2.0.16</version>
 			<optional>true</optional>
 		</dependency>
 		<!-- javassist -->
 		<dependency>
 			<groupId>org.javassist</groupId>
 			<artifactId>javassist</artifactId>
-			<version>3.18.2-GA</version>
+			<version>3.30.2-GA</version>
 		</dependency>
 	</dependencies>
+
 	<build>
 		<directory>${project.basedir}/debug</directory>
 		<outputDirectory>${project.basedir}/debug/classes</outputDirectory>
@@ -97,10 +108,10 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.3.2</version>
+				<version>3.7.0</version>
 				<configuration>
-					<source>1.5</source>
-					<target>1.5</target>
+					<source>21</source>
+					<target>21</target>
 				</configuration>
 			</plugin>
 		</plugins>

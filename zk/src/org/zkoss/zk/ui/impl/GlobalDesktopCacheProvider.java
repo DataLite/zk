@@ -34,7 +34,7 @@ import org.zkoss.zk.ui.sys.DesktopCacheProvider;
  * @see SessionDesktopCacheProvider
  */
 public class GlobalDesktopCacheProvider implements DesktopCacheProvider, Serializable {
-	private static final String ATTR_CACHE = "javax.zkoss.zk.desktop-cache";
+	private static final String ATTR_CACHE = "jakarta.zkoss.zk.desktop-cache";
 	private static final long serialVersionUID = 20060622L;
 
 	//-- DesktopCacheProvider --//

@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import org.zkoss.html.HTMLs;
 import org.zkoss.html.JavaScript;
@@ -73,20 +73,20 @@ public class HtmlPageRenders {
 	//	private static final Logger log = LoggerFactory.getLogger(HtmlPageRenders.class);
 
 	/** Denotes whether style sheets are generated for this request. */
-	private static final String ATTR_LANG_CSS_GENED = "javax.zkoss.zk.lang.css.generated";
-	//Naming with javax to be able to shared among portlets
+	private static final String ATTR_LANG_CSS_GENED = "jakarta.zkoss.zk.lang.css.generated";
+	//Naming with jakarta to be able to shared among portlets
 	/** Denotes whether JavaScripts are generated for this request. */
-	private static final String ATTR_LANG_JS_GENED = "javax.zkoss.zk.lang.js.generated";
-	//Naming with javax to be able to shared among portlets
+	private static final String ATTR_LANG_JS_GENED = "jakarta.zkoss.zk.lang.js.generated";
+	//Naming with jakarta to be able to shared among portlets
 	/** Denotes whether the unavailable message is generated for this request. */
-	private static final String ATTR_UNAVAILABLE_GENED = "javax.zkoss.zk.unavail.generated";
+	private static final String ATTR_UNAVAILABLE_GENED = "jakarta.zkoss.zk.unavail.generated";
 	/** Denotes whether zkdt has been generated. */
-	private static final String ATTR_DESKTOP_JS_GENED = "javax.zkoss.zk.dtjs.generated";
+	private static final String ATTR_DESKTOP_JS_GENED = "jakarta.zkoss.zk.dtjs.generated";
 
 	/** Denotes DOCTYPE has been generated. */
-	private static final String DOCTYPE_GENED = "javax.zkoss.zk.doctype.generated";
+	private static final String DOCTYPE_GENED = "jakarta.zkoss.zk.doctype.generated";
 	/** Denotes the first line has been generated. */
-	private static final String FIRST_LINE_GENED = "javax.zkoss.zk.firstline.generated";
+	private static final String FIRST_LINE_GENED = "jakarta.zkoss.zk.firstline.generated";
 
 	/** The render context. */
 	private static final String ATTR_RENDER_CONTEXT = "org.zkoss.zk.ui.renderContext";
@@ -487,7 +487,7 @@ public class HtmlPageRenders {
 						sb.append("\" media=\"").append(media);
 					sb.append("\"/>");
 				}
-			} catch (javax.servlet.ServletException ex) {
+			} catch (jakarta.servlet.ServletException ex) {
 				throw new UiException(ex);
 			}
 		} else {
@@ -504,7 +504,7 @@ public class HtmlPageRenders {
 			String url;
 			try {
 				url = ServletFns.encodeURL(js.getSrc());
-			} catch (javax.servlet.ServletException ex) {
+			} catch (jakarta.servlet.ServletException ex) {
 				throw new UiException(ex);
 			}
 

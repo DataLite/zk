@@ -17,7 +17,7 @@ Copyright (C) 2006 Potix Corporation. All Rights Reserved.
 package org.zkoss.web.portlet;
 
 import javax.portlet.RenderResponse;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 import org.zkoss.web.servlet.ServletOutputStreamWrapper;
 
@@ -62,7 +62,7 @@ public class RenderHttpServletResponse implements HttpServletResponse {
 		return _res.getLocale();
 	}
 
-	public javax.servlet.ServletOutputStream getOutputStream() throws java.io.IOException {
+	public jakarta.servlet.ServletOutputStream getOutputStream() throws java.io.IOException {
 		return ServletOutputStreamWrapper.getInstance(_res.getPortletOutputStream());
 	}
 
@@ -103,7 +103,7 @@ public class RenderHttpServletResponse implements HttpServletResponse {
 	}
 
 	//-- HttpServletResponse --//
-	public void addCookie(javax.servlet.http.Cookie cookie) {
+	public void addCookie(jakarta.servlet.http.Cookie cookie) {
 	}
 
 	public void addDateHeader(String name, long date) {

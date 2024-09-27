@@ -18,10 +18,10 @@ package org.zkoss.zkplus.cdi;
 
 import java.lang.reflect.Method;
 
-import javax.el.ELContext;
-import javax.el.ELResolver;
-import javax.el.ValueExpression;
-import javax.el.VariableMapper;
+import jakarta.el.ELContext;
+import jakarta.el.ELResolver;
+import jakarta.el.ValueExpression;
+import jakarta.el.VariableMapper;
 
 import org.zkoss.xel.Function;
 import org.zkoss.xel.FunctionMapper;
@@ -55,7 +55,7 @@ import org.zkoss.xel.XelContext;
 		return _cdiResolver;
 	}
 
-	public javax.el.FunctionMapper getFunctionMapper() {
+	public jakarta.el.FunctionMapper getFunctionMapper() {
 		return _xelc != null ? new XelELMapper(_xelc.getFunctionMapper()) : null;
 	}
 
@@ -67,7 +67,7 @@ import org.zkoss.xel.XelContext;
 		return _xelc;
 	}
 
-	private class XelELMapper extends javax.el.FunctionMapper {
+	private class XelELMapper extends jakarta.el.FunctionMapper {
 		private FunctionMapper _mapper;
 
 		public XelELMapper(FunctionMapper mapper) {

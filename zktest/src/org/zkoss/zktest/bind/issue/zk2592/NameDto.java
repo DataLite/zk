@@ -1,6 +1,6 @@
 package org.zkoss.zktest.bind.issue.zk2592;
 
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Size;
 
 public class NameDto {
 	

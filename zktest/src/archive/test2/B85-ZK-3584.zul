@@ -14,7 +14,7 @@ Copyright (C) 2017 Potix Corporation. All Rights Reserved.
 -->
 <zk xmlns:n="native">
     <zscript>
-        import javax.servlet.http.*;
+        import jakarta.servlet.http.*;
         import org.zkoss.web.servlet.http.*;
 
         HttpServletRequest req = (HttpServletRequest) Executions.getCurrent().getNativeRequest();

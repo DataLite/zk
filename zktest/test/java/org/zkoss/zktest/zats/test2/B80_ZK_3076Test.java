@@ -18,7 +18,7 @@ import org.junit.Assert;
 import org.junit.Test;
 import org.zkoss.zktest.zats.WebDriverTestCase;
 
-import javax.validation.constraints.AssertFalse;
+import jakarta.validation.constraints.AssertFalse;
 
 /**
  * 

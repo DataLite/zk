@@ -24,12 +24,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import javax.servlet.ServletContext;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,12 +84,12 @@ public class WebManager {
 	private static final Logger log = LoggerFactory.getLogger(WebManager.class);
 
 	/** A context attribute for storing an instance of this class. */
-	/*package*/ static final String ATTR_WEB_MANAGER = "javax.zkoss.zk.ui.WebManager";
+	/*package*/ static final String ATTR_WEB_MANAGER = "jakarta.zkoss.zk.ui.WebManager";
 	/** A request attribute to store the current desktop.
 	 * Because we store this portlet request, we have to name it
-	 * with javax such that it is visible to other servlets and portlets.
+	 * with jakarta such that it is visible to other servlets and portlets.
 	 */
-	/*package*/ static final String ATTR_DESKTOP = "javax.zkoss.zk.ui.desktop";
+	/*package*/ static final String ATTR_DESKTOP = "jakarta.zkoss.zk.ui.desktop";
 
 	/** Map(ServletContext, List(WebManagerActivationListener)). */
 	private static final Map<ServletContext, List<WebManagerActivationListener>> _actListeners = new HashMap<ServletContext, List<WebManagerActivationListener>>();

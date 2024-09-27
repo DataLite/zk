@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.portlet.PortletSession;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpSession;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +74,7 @@ public class SimpleSession implements Session, SessionCtrl {
 	 *
 	 * <p>It is used if java.io.Serializable is NOT implemented.
 	 */
-	private static final String ATTR_PRIVATE = "javax.zkoss.ui.session.private";
+	private static final String ATTR_PRIVATE = "jakarta.zkoss.ui.session.private";
 
 	/** The Web application that this session belongs to. */
 	private WebApp _wapp;
@@ -103,7 +103,7 @@ public class SimpleSession implements Session, SessionCtrl {
 	 *
 	 * @param hsess the original HTTP session.
 	 * @param request the original request causing this session to be created.
-	 * If HTTP and servlet, it is javax.servlet.http.HttpServletRequest.
+	 * If HTTP and servlet, it is jakarta.servlet.http.HttpServletRequest.
 	 * If portlet, it is javax.portlet.RenderRequest.
 	 * @since 3.0.1
 	 */

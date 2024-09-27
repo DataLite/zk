@@ -3,27 +3,30 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>org.zkoss.zk</groupId>
 	<artifactId>zksandbox</artifactId>
+	<version>8.5.0_jakarta</version>
+	<packaging>war</packaging>
+
 	<properties>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<zkel.version>1.1.0</zkel.version>
-		<commons-lang.version>2.4</commons-lang.version>
+		<commons-lang3.version>3.17.0</commons-lang3.version>
 		<bsh.version>2.0b6</bsh.version>
-		<commons-fileupload.version>1.3.2</commons-fileupload.version>
-		<commons-io.version>2.4</commons-io.version>
-		<commons-logging.version>1.1.1</commons-logging.version>
-		<servlet.version>2.4</servlet.version>
-		<poi.version>3.7</poi.version>
+		<commons-fileupload2.version>2.0.0-M2</commons-fileupload2.version>
+		<commons-io.version>2.17.0</commons-io.version>
+		<commons-logging.version>1.3.4</commons-logging.version>
+		<servlet.version>6.1.0</servlet.version>
+		<poi.version>5.3.0</poi.version>
 		<jxl.version>2.6.12</jxl.version>
-		<jasperreports.version>4.5.1</jasperreports.version>
-		<jfreechart.version>1.0.14</jfreechart.version>
-		<filters.version>2.0.235</filters.version>
-		<ckez.version>4.4.6.1</ckez.version>
-		<gmapsz.version>3.0.1</gmapsz.version>
+		<jasperreports.version>7.0.0</jasperreports.version>
+		<jfreechart.version>1.5.5</jfreechart.version>
+		<filters.version>2.0.235-1</filters.version>
+		<ckez.version>4.21.0.0-jakarta</ckez.version>
+		<gmapsz.version>4.0.3</gmapsz.version>
 		<timelinez.version>2.3.1_50</timelinez.version>
 		<timeplotz.version>1.1_50</timeplotz.version>
-		<zuljsp.version>1.4.1</zuljsp.version>
+		<zuljsp.version>2.5.0</zuljsp.version>
 	</properties>
-	<version>8.5.0</version>
-	<packaging>war</packaging>
+
 	<licenses>
 		<license>
 			<name>GNU LESSER GENERAL PUBLIC LICENSE, Version 3</name>
@@ -31,10 +34,12 @@
 			<distribution>repo</distribution>
 		</license>
 	</licenses>
+
 	<scm>
 		<connection>scm:git:https://github.com/zkoss/zk.git</connection>
 		<url>http://mavensync.zkoss.org/maven2</url>
 	</scm>
+
 	<repositories>
 		<repository>
 			<id>zk repository</id>
@@ -68,10 +73,11 @@
 			<url>http://repo1.maven.org/maven2</url>
 		</pluginRepository>
 	</pluginRepositories>
+
 	<dependencies>
 		<dependency>
-			<groupId>javax.servlet</groupId>
-			<artifactId>servlet-api</artifactId>
+			<groupId>jakarta.servlet</groupId>
+			<artifactId>jakarta.servlet-api</artifactId>
 			<version>${servlet.version}</version>
 			<scope>provided</scope>
 		</dependency>
@@ -149,19 +155,19 @@
 			<version>${commons-logging.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>commons-fileupload</groupId>
-			<artifactId>commons-fileupload</artifactId>
-			<version>${commons-fileupload.version}</version>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-fileupload2-jakarta-servlet6</artifactId>
+			<version>${commons-fileupload2.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.zkoss.theme</groupId>
 			<artifactId>sapphire</artifactId>
-			<version>${project.version}</version>
+			<version>8.5.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.zkoss.theme</groupId>
 			<artifactId>silvertail</artifactId>
-			<version>${project.version}</version>
+			<version>8.5.0</version>
 		</dependency>
 		<!--  
 		<dependency>
@@ -188,12 +194,12 @@
 		<dependency>
 			<groupId>org.zkoss.zk</groupId>
 			<artifactId>zkex</artifactId>
-			<version>${project.version}</version>
+			<version>3.6.3</version>
 		</dependency>
 		<dependency>
 			<groupId>org.zkoss.zk</groupId>
 			<artifactId>zkmax</artifactId>
-			<version>${project.version}</version>
+			<version>3.6.3</version>
 		</dependency>
 		<dependency>
 			<groupId>org.zkoss.zk</groupId>
@@ -247,9 +253,9 @@
 			<version>1.0</version>
 		</dependency>
 		<dependency>
-			<groupId>commons-lang</groupId>
-			<artifactId>commons-lang</artifactId>
-			<version>${commons-lang.version}</version>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
+			<version>${commons-lang3.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache-extras.beanshell</groupId>
@@ -266,10 +272,10 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>2.3.2</version>
+				<version>3.7.0</version>
 				<configuration>
-					<source>1.5</source>
-					<target>1.5</target>
+					<source>21</source>
+					<target>21</target>
 					<excludes>
 						<exclude>**/archive/**</exclude>
 					</excludes>
@@ -278,16 +284,18 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-war-plugin</artifactId>
-				<version>2.1.1</version>
+				<version>3.2.0</version>
 				<configuration>
 					<warSourceDirectory>${project.basedir}/src/archive/</warSourceDirectory>
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>org.mortbay.jetty</groupId>
+				<groupId>org.eclipse.jetty</groupId>
 				<artifactId>jetty-maven-plugin</artifactId>
-				<version>7.6.8.v20121106</version>
+				<version>11.0.24</version>
 				<configuration>
+					<stopKey>foo</stopKey>
+					<stopPort>9999</stopPort>
 					<webAppSourceDirectory>${project.basedir}/src/archive/</webAppSourceDirectory>
 					<webAppConfig>
 						<contextPath>/${project.artifactId}</contextPath>

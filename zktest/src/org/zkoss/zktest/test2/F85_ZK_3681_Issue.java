@@ -1,8 +1,8 @@
 package org.zkoss.zktest.test2;
 
 import java.io.Serializable;
-import javax.validation.constraints.Pattern;
-import javax.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 
 public class F85_ZK_3681_Issue implements Serializable {
 	private boolean isDone;

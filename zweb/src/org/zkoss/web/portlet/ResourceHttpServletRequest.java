@@ -26,8 +26,8 @@ import java.util.Map;
 
 import javax.portlet.PortletSession;
 import javax.portlet.ResourceRequest;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 
 import org.zkoss.util.CollectionsX;
 import org.zkoss.web.Attributes;
@@ -146,8 +146,8 @@ public class ResourceHttpServletRequest implements HttpServletRequest {
 		return ct != null ? ct : "text/html";
 	}
 
-	public javax.servlet.ServletInputStream getInputStream() {
-		return new javax.servlet.ServletInputStream() {
+	public jakarta.servlet.ServletInputStream getInputStream() {
+		return new jakarta.servlet.ServletInputStream() {
 			public int read() {
 				return -1;
 			}
@@ -217,7 +217,7 @@ public class ResourceHttpServletRequest implements HttpServletRequest {
 		return _hreq != null ? _hreq.getRemotePort() : -1;
 	}
 
-	public javax.servlet.RequestDispatcher getRequestDispatcher(String path) {
+	public jakarta.servlet.RequestDispatcher getRequestDispatcher(String path) {
 		return _hreq != null ? _hreq.getRequestDispatcher(path) : null; //implies we don't support relative URI
 	}
 
@@ -263,8 +263,8 @@ public class ResourceHttpServletRequest implements HttpServletRequest {
 		return _attrs.get(Attributes.INCLUDE_CONTEXT_PATH);
 	}
 
-	public javax.servlet.http.Cookie[] getCookies() {
-		return _hreq != null ? _hreq.getCookies() : new javax.servlet.http.Cookie[0];
+	public jakarta.servlet.http.Cookie[] getCookies() {
+		return _hreq != null ? _hreq.getCookies() : new jakarta.servlet.http.Cookie[0];
 	}
 
 	public long getDateHeader(String name) {

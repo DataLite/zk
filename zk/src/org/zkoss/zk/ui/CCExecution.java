@@ -14,7 +14,7 @@ it will be useful, but WITHOUT ANY WARRANTY.
 */
 package org.zkoss.zk.ui;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import org.zkoss.zk.ui.http.WebManager;
 import org.zkoss.zk.ui.impl.DesktopImpl;
