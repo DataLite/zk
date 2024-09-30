@@ -16,6 +16,7 @@ Copyright (C) 2008 Potix Corporation. All Rights Reserved.
 */
 package org.zkoss.zk.au.http;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.zkoss.lang.Generics.cast;
 
 import java.io.ByteArrayInputStream;
@@ -23,6 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -34,15 +37,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.FileUploadBase;
-import org.apache.commons.fileupload.FileUploadBase.IOFileUploadException;
-import org.apache.commons.fileupload.FileUploadException;
-import org.apache.commons.fileupload.ProgressListener;
-import org.apache.commons.fileupload.disk.DiskFileItem;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.fileupload.servlet.ServletRequestContext;
+import org.apache.commons.fileupload2.core.*;
+import org.apache.commons.fileupload2.jakarta.servlet6.JakartaServletFileUpload;
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.FileCleaningTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +67,8 @@ import org.zkoss.zk.ui.sys.DesktopCtrl;
 import org.zkoss.zk.ui.sys.WebAppCtrl;
 import org.zkoss.zk.ui.util.CharsetFinder;
 import org.zkoss.zk.ui.util.Configuration;
+
+import javax.naming.SizeLimitExceededException;
 
 /**
  * The AU extension to upload files.
@@ -175,7 +175,7 @@ public class AuUploader implements AuExtension {
 
 			if (ex instanceof ComponentNotFoundException) {
 				alert = Messages.get(MZk.UPDATE_OBSOLETE_PAGE, uuid);
-			} else if (ex instanceof IOFileUploadException) {
+			} else if (ex instanceof FileUploadException) {
 				log.debug("File upload cancelled!");
 			} else {
 				alert = handleError(ex);
@@ -243,27 +243,12 @@ public class AuUploader implements AuExtension {
 	 */
 	protected String handleError(Throwable ex) {
 		log.error("Failed to upload", ex);
-		if (ex instanceof FileUploadBase.SizeLimitExceededException) {
+		if (ex instanceof SizeLimitExceededException) {
 			try {
-				FileUploadBase.SizeLimitExceededException fex = (FileUploadBase.SizeLimitExceededException) ex;
-				long size = fex.getActualSize();
-				long limit = fex.getPermittedSize();
 				final Class<?> msgClass = Classes.forNameByThread("org.zkoss.zul.mesg.MZul");
 				Field msgField = msgClass.getField("UPLOAD_ERROR_EXCEED_MAXSIZE");
-				int divisor1 = 1024;
-				int divisor2 = 1024 * 1024;
-				String[] units = new String[] { " Bytes", " KB", " MB" };
-				int i1 = (int) (Math.log(size) / Math.log(1024));
-				int i2 = (int) (Math.log(limit) / Math.log(1024));
-				String size_auto = Math.round(size / Math.pow(1024, i1)) + units[i1];
-				String limit_auto = Math.round(limit / Math.pow(1024, i2)) + units[i2];
-
-				Object[] args = new Object[] { size_auto, limit_auto, size, limit,
-						String.valueOf((Long) (size / divisor1)) + units[1],
-						String.valueOf((Long) (limit / divisor1)) + units[1],
-						String.valueOf((Long) (size / divisor2)) + units[2],
-						String.valueOf((Long) (limit / divisor2)) + units[2] };
-
+				// Generalized error message indicating size limit exceeded
+				Object[] args = new Object[]{"File size exceeds the allowed limit."};
 				return Messages.get(msgField.getInt(null), args);
 			} catch (Throwable e) {
 				log.error("Failed to parse upload error message..", e);
@@ -354,7 +339,7 @@ public class AuUploader implements AuExtension {
 					if (charset == null)
 						charset = conf.getUploadCharset();
 				}
-				return fi.isInMemory() ? new AMedia(name, null, ctype, fi.getString(charset))
+				return fi.isInMemory() ? new AMedia(name, null, ctype, fi.getString(Charset.forName(charset)))
 						: new ReaderMedia(name, null, ctype, fi, charset);
 			}
 		}
@@ -414,7 +399,7 @@ public class AuUploader implements AuExtension {
 		}
 
 		final ItemFactory fty = new ItemFactory(desktop, request, key, sizeThreadHold, repository, dfiFactory);
-		final ServletFileUpload sfu = new ServletFileUpload(fty);
+		final JakartaServletFileUpload sfu = new JakartaServletFileUpload(fty);
 
 		sfu.setProgressListener(fty.new ProgressCallback());
 
@@ -481,7 +466,7 @@ public class AuUploader implements AuExtension {
 	 */
 	public static final boolean isMultipartContent(HttpServletRequest request) {
 		return "post".equals(request.getMethod().toLowerCase(java.util.Locale.ENGLISH))
-				&& FileUploadBase.isMultipartContent(new ServletRequestContext(request));
+				&& JakartaServletFileUpload.isMultipartContent(request);
 	}
 
 	private static class StreamMedia extends AMedia {
@@ -570,20 +555,22 @@ public class AuUploader implements AuExtension {
 	/**
 	 * The file item factory that monitors the progress of uploading.
 	 */
-	private static class ItemFactory extends DiskFileItemFactory implements Serializable {
+	private static class ItemFactory implements FileItemFactory<DiskFileItem>, Serializable {
 		private final Desktop _desktop;
 		private final String _key;
 		/** The total length (content length). */
 		private long _cbtotal;
 		/** # of bytes being received. */
 		private long _cbrcv;
+		private final File _repository;
+		private final int _threshold;
 		private org.zkoss.zk.ui.sys.DiskFileItemFactory _factory;
 
 		@SuppressWarnings("unchecked")
 		/*package*/ ItemFactory(Desktop desktop, HttpServletRequest request, String key, int sizeThreshold,
 				File repository, org.zkoss.zk.ui.sys.DiskFileItemFactory factory) {
-			super(sizeThreshold, repository);
-
+			_threshold = sizeThreshold;
+			_repository = repository;
 			_factory = factory;
 			_desktop = desktop;
 			_key = key;
@@ -602,8 +589,8 @@ public class AuUploader implements AuExtension {
 				_desktop.setAttribute(Attributes.UPLOAD_PERCENT, new HashMap());
 				_desktop.setAttribute(Attributes.UPLOAD_SIZE, new HashMap());
 			}
-			((Map) _desktop.getAttribute(Attributes.UPLOAD_PERCENT)).put(key, new Integer(0));
-			((Map) _desktop.getAttribute(Attributes.UPLOAD_SIZE)).put(key, new Long(_cbtotal));
+			((Map) _desktop.getAttribute(Attributes.UPLOAD_PERCENT)).put(key, Integer.valueOf(0));
+			((Map) _desktop.getAttribute(Attributes.UPLOAD_SIZE)).put(key, Long.valueOf(_cbtotal));
 		}
 
 		@SuppressWarnings("unchecked")
@@ -613,32 +600,65 @@ public class AuUploader implements AuExtension {
 				_cbrcv = cbRead;
 				percent = (int) (_cbrcv * 100 / _cbtotal);
 			}
-			((Map) _desktop.getAttribute(Attributes.UPLOAD_PERCENT)).put(_key, new Integer(percent));
+			((Map) _desktop.getAttribute(Attributes.UPLOAD_PERCENT)).put(_key, Integer.valueOf(percent));
 		}
 
 		//-- FileItemFactory --//
 		public FileItem createItem(String fieldName, String contentType, boolean isFormField, String fileName) {
-			if (_factory != null)
+			if (_factory != null) {
 				return _factory.createItem(fieldName, contentType, isFormField, fileName, getSizeThreshold(),
 						getRepository());
-			return new ZkFileItem(fieldName, contentType, isFormField, fileName, getSizeThreshold(), getRepository());
+			}
+			return new ZkFileItem(fieldName, contentType, isFormField, fileName, getSizeThreshold(), getRepository().toPath()).getDiskFileItem();
+		}
+
+		public int getSizeThreshold() {
+			return this._threshold;
+		}
+
+		public File getRepository() {
+			return this._repository;
+		}
+
+		@Override
+		public AbstractFileItemBuilder fileItemBuilder() {
+			return DiskFileItem.builder()
+					.setBufferSize(this._threshold)
+					.setFileCleaningTracker(new FileCleaningTracker())
+					.setPath(this._repository.getPath());
 		}
 
 		//-- helper classes --//
 		/** FileItem created by {@link ItemFactory}.
 		 */
-		/*package*/ class ZkFileItem extends DiskFileItem {
-			/*package*/ ZkFileItem(String fieldName, String contentType, boolean isFormField, String fileName,
-					int sizeThreshold, File repository) {
-				super(fieldName, contentType, isFormField, fileName, sizeThreshold, repository);
+		/*package*/ class ZkFileItem {
+
+			private final DiskFileItem diskFileItem;
+
+			ZkFileItem(String fieldName, String contentType, boolean isFormField, String fileName, int sizeThreshold, Path repository) {
+
+				this.diskFileItem = DiskFileItem.builder()
+						.setFieldName(fieldName)
+						.setContentType(contentType)
+						.setFormField(isFormField)
+						.setFileName(fileName)
+						.setBufferSize(sizeThreshold)
+						.setPath(repository)
+						.get();
+			}
+
+			public DiskFileItem getDiskFileItem() {
+				return diskFileItem;
 			}
 
 			/** Returns the charset by parsing the content type.
 			 * If none is defined, UTF-8 is assumed.
 			 */
-			public String getCharSet() {
-				final String charset = super.getCharSet();
-				return charset != null ? charset : "UTF-8";
+			public Charset getCharset() {
+				ParameterParser parser = new ParameterParser();
+				parser.setLowerCaseNames(true);
+				Map<String, String> params = parser.parse(diskFileItem.getContentType(), ';');
+				return Charsets.toCharset(params.get("charset"), UTF_8);
 			}
 		}
 

@@ -16,12 +16,15 @@ Copyright (C) 2012 Potix Corporation. All Rights Reserved.
 */
 package org.zkoss.zk.au.http;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.zkoss.lang.Generics.cast;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.nio.charset.Charset;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -32,14 +35,10 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import org.apache.commons.fileupload.FileItem;
-import org.apache.commons.fileupload.FileUploadBase;
-import org.apache.commons.fileupload.FileUploadBase.IOFileUploadException;
-import org.apache.commons.fileupload.FileUploadException;
-import org.apache.commons.fileupload.disk.DiskFileItem;
-import org.apache.commons.fileupload.disk.DiskFileItemFactory;
-import org.apache.commons.fileupload.servlet.ServletFileUpload;
-import org.apache.commons.fileupload.servlet.ServletRequestContext;
+import org.apache.commons.fileupload2.core.*;
+import org.apache.commons.fileupload2.jakarta.servlet6.JakartaServletFileUpload;
+import org.apache.commons.io.Charsets;
+import org.apache.commons.io.FileCleaningTracker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +61,7 @@ import org.zkoss.zk.ui.impl.Attributes;
 import org.zkoss.zk.ui.sys.WebAppCtrl;
 import org.zkoss.zk.ui.util.CharsetFinder;
 import org.zkoss.zk.ui.util.Configuration;
+import javax.naming.SizeLimitExceededException;
 
 /**
  * The AU extension to upload files with HTML5 feature.
@@ -125,9 +125,9 @@ public class AuDropUploader implements AuExtension {
 
 			if (ex instanceof ComponentNotFoundException) {
 				alert = Messages.get(MZk.UPDATE_OBSOLETE_PAGE, uuid);
-			} else if (ex instanceof IOFileUploadException) {
+			} else if (ex instanceof FileUploadException) {
 				log.debug("File upload cancelled!");
-			} else if (ex instanceof FileUploadBase.SizeLimitExceededException) {
+			} else if (ex instanceof SizeLimitExceededException) {
 				alert = Exceptions.getMessage(ex);
 				response.getWriter().write("error:" + alert);
 			} else {
@@ -260,7 +260,7 @@ public class AuDropUploader implements AuExtension {
 					if (charset == null)
 						charset = conf.getUploadCharset();
 				}
-				return fi.isInMemory() ? new AMedia(name, null, ctype, fi.getString(charset))
+				return fi.isInMemory() ? new AMedia(name, null, ctype, fi.getString(Charset.forName(charset)))
 						: new ReaderMedia(name, null, ctype, fi, charset);
 			}
 		}
@@ -320,7 +320,7 @@ public class AuDropUploader implements AuExtension {
 		}
 
 		final ItemFactory fty = new ItemFactory(sizeThreadHold, repository, dfiFactory);
-		final ServletFileUpload sfu = new ServletFileUpload(fty);
+		final JakartaServletFileUpload sfu = new JakartaServletFileUpload(fty);
 
 		Integer maxsz = null;
 		try {
@@ -379,7 +379,7 @@ public class AuDropUploader implements AuExtension {
 	 */
 	public static final boolean isMultipartContent(HttpServletRequest request) {
 		return "post".equals(request.getMethod().toLowerCase(java.util.Locale.ENGLISH))
-				&& FileUploadBase.isMultipartContent(new ServletRequestContext(request));
+				&& JakartaServletFileUpload.isMultipartContent(request);
 	}
 
 	private static class StreamMedia extends AMedia {
@@ -468,39 +468,74 @@ public class AuDropUploader implements AuExtension {
 	/**
 	 * Customize DiskFileItemFactory (return ZkFileItem).
 	 */
-	private static class ItemFactory extends DiskFileItemFactory implements Serializable {
+	private static class ItemFactory implements FileItemFactory<DiskFileItem>, Serializable {
 		private org.zkoss.zk.ui.sys.DiskFileItemFactory _factory;
+		private final File _repository;
+		private final int _threshold;
 
 		@SuppressWarnings("unchecked")
 		/*package*/ ItemFactory(int sizeThreshold, File repository, org.zkoss.zk.ui.sys.DiskFileItemFactory factory) {
-			super(sizeThreshold, repository);
-
+			_threshold = sizeThreshold;
+			_repository = repository;
 			_factory = factory;
 		}
 
 		//-- FileItemFactory --//
 		public FileItem createItem(String fieldName, String contentType, boolean isFormField, String fileName) {
-			if (_factory != null)
+			if (_factory != null) {
 				return _factory.createItem(fieldName, contentType, isFormField, fileName, getSizeThreshold(),
 						getRepository());
-			return new ZkFileItem(fieldName, contentType, isFormField, fileName, getSizeThreshold(), getRepository());
+			}
+			return new ZkFileItem(fieldName, contentType, isFormField, fileName, getSizeThreshold(), getRepository().toPath()).getDiskFileItem();
+		}
+
+		public int getSizeThreshold() {
+			return this._threshold;
+		}
+
+		public File getRepository() {
+			return this._repository;
+		}
+
+		@Override
+		public AbstractFileItemBuilder fileItemBuilder() {
+			return DiskFileItem.builder()
+					.setBufferSize(this._threshold)
+					.setFileCleaningTracker(new FileCleaningTracker())
+					.setPath(this._repository.getPath());
 		}
 
 		//-- helper classes --//
 		/** FileItem created by {@link ItemFactory}.
 		 */
-		/*package*/ class ZkFileItem extends DiskFileItem {
-			/*package*/ ZkFileItem(String fieldName, String contentType, boolean isFormField, String fileName,
-					int sizeThreshold, File repository) {
-				super(fieldName, contentType, isFormField, fileName, sizeThreshold, repository);
+		/*package*/ class ZkFileItem {
+
+			private final DiskFileItem diskFileItem;
+
+			/*package*/ ZkFileItem(String fieldName, String contentType, boolean isFormField, String fileName, int sizeThreshold, Path repository) {
+
+				this.diskFileItem = DiskFileItem.builder()
+						.setFieldName(fieldName)
+						.setContentType(contentType)
+						.setFormField(isFormField)
+						.setFileName(fileName)
+						.setBufferSize(sizeThreshold)
+						.setPath(repository)
+						.get();
+			}
+
+			public DiskFileItem getDiskFileItem() {
+				return diskFileItem;
 			}
 
 			/** Returns the charset by parsing the content type.
 			 * If none is defined, UTF-8 is assumed.
 			 */
-			public String getCharSet() {
-				final String charset = super.getCharSet();
-				return charset != null ? charset : "UTF-8";
+			public Charset getCharset() {
+				ParameterParser parser = new ParameterParser();
+				parser.setLowerCaseNames(true);
+				Map<String, String> params = parser.parse(diskFileItem.getContentType(), ';');
+				return Charsets.toCharset(params.get("charset"), UTF_8);
 			}
 		}
 	}
