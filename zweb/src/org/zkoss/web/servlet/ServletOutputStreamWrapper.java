@@ -22,6 +22,7 @@ import java.io.Writer;
 
 import jakarta.servlet.ServletOutputStream;
 
+import jakarta.servlet.WriteListener;
 import org.zkoss.io.WriterOutputStream;
 
 /**
@@ -75,5 +76,15 @@ public class ServletOutputStreamWrapper extends ServletOutputStream {
 	public void close() throws IOException {
 		_stream.close();
 		super.close();
+	}
+
+	@Override
+	public boolean isReady() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public void setWriteListener(WriteListener writeListener) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
 	}
 }

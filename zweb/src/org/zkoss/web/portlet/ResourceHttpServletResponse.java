@@ -23,6 +23,10 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import org.zkoss.web.servlet.ServletOutputStreamWrapper;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+
 /**
  * A facade of ResourceResponse that implements HttpServletResponse.
  * 
@@ -182,5 +186,35 @@ public class ResourceHttpServletResponse implements HttpServletResponse {
 		ResourceResponse val = o instanceof ResourceResponse ? (ResourceResponse) o
 				: o instanceof ResourceHttpServletResponse ? ((ResourceHttpServletResponse) o)._res : null;
 		return val != null && val.equals(_res);
+	}
+
+	@Override
+	public void sendRedirect(String s, int i, boolean b) throws IOException {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public int getStatus() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public String getHeader(String s) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public Collection<String> getHeaders(String s) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public Collection<String> getHeaderNames() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public void setContentLengthLong(long l) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
 	}
 }

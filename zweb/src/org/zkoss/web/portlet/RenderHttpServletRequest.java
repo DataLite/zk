@@ -16,16 +16,15 @@ Copyright (C) 2006 Potix Corporation. All Rights Reserved.
 */
 package org.zkoss.web.portlet;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
+import java.util.*;
 
 import javax.portlet.PortletSession;
 import javax.portlet.RenderRequest;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+
+import jakarta.servlet.*;
+import jakarta.servlet.http.*;
 
 import org.zkoss.util.CollectionsX;
 import org.zkoss.web.Attributes;
@@ -144,6 +143,21 @@ public class RenderHttpServletRequest implements HttpServletRequest {
 			public int read() {
 				return -1;
 			}
+
+			@Override
+			public boolean isFinished() {
+				throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+			}
+
+			@Override
+			public boolean isReady() {
+				throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+			}
+
+			@Override
+			public void setReadListener(ReadListener readListener) {
+				throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+			}
 		};
 	}
 
@@ -195,7 +209,7 @@ public class RenderHttpServletRequest implements HttpServletRequest {
 	 * @deprecated
 	 */
 	public String getRealPath(String path) {
-		return _hreq != null ? _hreq.getRealPath(path) : null;
+		return _hreq != null ? _hreq.getServletContext().getRealPath(path) : null;
 	}
 
 	public String getRemoteAddr() {
@@ -363,5 +377,95 @@ public class RenderHttpServletRequest implements HttpServletRequest {
 		RenderRequest val = o instanceof RenderRequest ? (RenderRequest) o
 				: o instanceof RenderHttpServletRequest ? ((RenderHttpServletRequest) o)._req : null;
 		return val != null && val.equals(_req);
+	}
+
+	@Override
+	public String changeSessionId() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public boolean authenticate(HttpServletResponse httpServletResponse) throws IOException, ServletException {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public void login(String s, String s1) throws ServletException {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public void logout() throws ServletException {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public Collection<Part> getParts() throws IOException, ServletException {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public Part getPart(String s) throws IOException, ServletException {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public <T extends HttpUpgradeHandler> T upgrade(Class<T> aClass) throws IOException, ServletException {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public long getContentLengthLong() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public ServletContext getServletContext() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public AsyncContext startAsync() throws IllegalStateException {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse) throws IllegalStateException {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public boolean isAsyncStarted() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public boolean isAsyncSupported() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public AsyncContext getAsyncContext() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public DispatcherType getDispatcherType() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public String getRequestId() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public String getProtocolRequestId() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public ServletConnection getServletConnection() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
 	}
 }

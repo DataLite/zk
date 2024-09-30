@@ -20,13 +20,15 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Enumeration;
+import java.util.EventListener;
+import java.util.Map;
 import java.util.Set;
 
 import javax.portlet.PortletContext;
 import javax.portlet.PortletRequestDispatcher;
-import jakarta.servlet.RequestDispatcher;
-import jakarta.servlet.Servlet;
-import jakarta.servlet.ServletContext;
+
+import jakarta.servlet.*;
+import jakarta.servlet.descriptor.JspConfigDescriptor;
 
 /**
  * A facade servlet context based on a given portlet context.
@@ -163,5 +165,175 @@ public class PortletServletContext implements ServletContext {
 	public String getContextPath() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+
+	@Override
+	public int getEffectiveMajorVersion() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public int getEffectiveMinorVersion() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public boolean setInitParameter(String s, String s1) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public ServletRegistration.Dynamic addServlet(String s, String s1) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public ServletRegistration.Dynamic addServlet(String s, Servlet servlet) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public ServletRegistration.Dynamic addServlet(String s, Class<? extends Servlet> aClass) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public ServletRegistration.Dynamic addJspFile(String s, String s1) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public <T extends Servlet> T createServlet(Class<T> aClass) throws ServletException {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public ServletRegistration getServletRegistration(String s) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public Map<String, ? extends ServletRegistration> getServletRegistrations() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public FilterRegistration.Dynamic addFilter(String s, String s1) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public FilterRegistration.Dynamic addFilter(String s, Filter filter) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public FilterRegistration.Dynamic addFilter(String s, Class<? extends Filter> aClass) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public <T extends Filter> T createFilter(Class<T> aClass) throws ServletException {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public FilterRegistration getFilterRegistration(String s) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public Map<String, ? extends FilterRegistration> getFilterRegistrations() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public SessionCookieConfig getSessionCookieConfig() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public void setSessionTrackingModes(Set<SessionTrackingMode> set) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public Set<SessionTrackingMode> getDefaultSessionTrackingModes() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public Set<SessionTrackingMode> getEffectiveSessionTrackingModes() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public void addListener(String s) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public <T extends EventListener> void addListener(T t) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public void addListener(Class<? extends EventListener> aClass) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public <T extends EventListener> T createListener(Class<T> aClass) throws ServletException {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public JspConfigDescriptor getJspConfigDescriptor() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public ClassLoader getClassLoader() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public void declareRoles(String... strings) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public String getVirtualServerName() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public int getSessionTimeout() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public void setSessionTimeout(int i) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public String getRequestCharacterEncoding() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public void setRequestCharacterEncoding(String s) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public String getResponseCharacterEncoding() {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
+	}
+
+	@Override
+	public void setResponseCharacterEncoding(String s) {
+		throw new UnsupportedOperationException("Not supported (Javax -> Jakarta migration).");
 	}
 }

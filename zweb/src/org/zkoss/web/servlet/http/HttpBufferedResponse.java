@@ -150,13 +150,13 @@ public class HttpBufferedResponse extends HttpServletResponseWrapper {
 	 * @deprecated
 	 */
 	public String encodeRedirectUrl(String url) {
-		return super.encodeRedirectUrl(url);
+		return super.encodeRedirectURL(url);
 	}
 
 	/**
 	 * @deprecated
 	 */
 	public String encodeUrl(String url) {
-		return super.encodeUrl(url);
+		return super.encodeURL(url);
 	}
 }

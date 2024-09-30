@@ -81,13 +81,6 @@ public class PortletHttpSession implements HttpSession {
 	/**
 	 * @deprecated
 	 */
-	public jakarta.servlet.http.HttpSessionContext getSessionContext() {
-		return null;
-	}
-
-	/**
-	 * @deprecated
-	 */
 	public Object getValue(String name) {
 		return null;
 	}
