@@ -19,7 +19,9 @@ package org.zkoss.zkplus.hibernate;
 import org.hibernate.HibernateException;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.cfg.AnnotationConfiguration;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.cfg.Configuration;
+import org.hibernate.service.ServiceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,8 +121,19 @@ public class HibernateUtil {
 	/*package*/ static SessionFactory initSessionFactory(String resource) {
 		if (_factory == null) {
 			try {
-				_factory = resource == null ? new AnnotationConfiguration().configure().buildSessionFactory()
-						: new AnnotationConfiguration().configure(resource).buildSessionFactory();
+
+				Configuration configuration = new Configuration();
+
+				if (resource == null) {
+					configuration.configure(); // Load default hibernate.cfg.xml
+				} else {
+					configuration.configure(resource); // Load custom configuration file
+				}
+
+				ServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
+						.applySettings(configuration.getProperties()).build();
+
+				_factory = configuration.buildSessionFactory(serviceRegistry);
 				log.debug(
 						"Hibernate configuration file loaded: " + (resource == null ? "hibernate.cfg.xml" : resource));
 			} catch (Throwable ex) {
