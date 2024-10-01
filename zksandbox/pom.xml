@@ -82,22 +82,6 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.apache.poi</groupId>
-			<artifactId>poi</artifactId>
-			<version>${poi.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>log4j</groupId>
-					<artifactId>log4j</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>net.sourceforge.jexcelapi</groupId>
-			<artifactId>jxl</artifactId>
-			<version>${jxl.version}</version>
-		</dependency>
-		<dependency>
 			<groupId>net.sf.jasperreports</groupId>
 			<artifactId>jasperreports</artifactId>
 			<version>${jasperreports.version}</version>
@@ -129,45 +113,9 @@
 			</exclusions>
 		</dependency>
 		<dependency>
-			<groupId>org.jfree</groupId>
-			<artifactId>jfreechart</artifactId>
-			<version>${jfreechart.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>jfree</groupId>
-					<artifactId>jcommon</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>com.jhlabs</groupId>
-			<artifactId>filters</artifactId>
-			<version>${filters.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-io</groupId>
-			<artifactId>commons-io</artifactId>
-			<version>${commons-io.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>commons-logging</groupId>
-			<artifactId>commons-logging</artifactId>
-			<version>${commons-logging.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-fileupload2-jakarta-servlet6</artifactId>
-			<version>${commons-fileupload2.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.zkoss.theme</groupId>
-			<artifactId>sapphire</artifactId>
-			<version>8.5.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.zkoss.theme</groupId>
-			<artifactId>silvertail</artifactId>
-			<version>8.5.0</version>
+			<groupId>org.zkoss.zk</groupId>
+			<artifactId>zul</artifactId>
+			<version>${project.version}</version>
 		</dependency>
 		<!--  
 		<dependency>
@@ -183,85 +131,22 @@
 		</dependency>
 		<dependency>
 			<groupId>org.zkoss.zk</groupId>
-			<artifactId>zhtml</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.zkoss.zk</groupId>
 			<artifactId>zk</artifactId>
 			<version>${project.version}</version>
 		</dependency>
+
+		<!--compile scope dependencies-->
 		<dependency>
-			<groupId>org.zkoss.zk</groupId>
-			<artifactId>zkex</artifactId>
-			<version>3.6.3</version>
-		</dependency>
-		<dependency>
-			<groupId>org.zkoss.zk</groupId>
-			<artifactId>zkmax</artifactId>
-			<version>3.6.3</version>
-		</dependency>
-		<dependency>
-			<groupId>org.zkoss.zk</groupId>
-			<artifactId>zkplus</artifactId>
+			<groupId>org.zkoss.common</groupId>
+			<artifactId>zcommon</artifactId>
 			<version>${project.version}</version>
+			<scope>compile</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.zkoss.zk</groupId>
-			<artifactId>zkbind</artifactId>
-			<version>${project.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.zkoss.zkforge</groupId>
-			<artifactId>ckez</artifactId>
-			<version>${ckez.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.zkoss.zkforge</groupId>
-			<artifactId>timelinez</artifactId>
-			<version>${timelinez.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.zkoss.zkforge</groupId>
-			<artifactId>timeplotz</artifactId>
-			<version>${timeplotz.version}</version>
-			<exclusions>
-				<exclusion>
-					<groupId>org.zkoss.zkforge</groupId>
-					<artifactId>timelinez</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.zkoss.zkforge</groupId>
-			<artifactId>gmapsz</artifactId>
-			<version>${gmapsz.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.zkoss.zk</groupId>
-			<artifactId>zuljsp</artifactId>
-			<version>${zuljsp.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.zkoss.zkforge.el</groupId>
-			<artifactId>zcommons-el</artifactId>
-			<version>${zkel.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.zkoss.addon</groupId>
-			<artifactId>flashchart</artifactId>
-			<version>1.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-			<version>${commons-lang3.version}</version>
-		</dependency>
-		<dependency>
-			<groupId>org.apache-extras.beanshell</groupId>
-			<artifactId>bsh</artifactId>
-			<version>${bsh.version}</version>
-			<scope>runtime</scope>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
+			<version>2.0.16</version>
+			<scope>compile</scope>
 		</dependency>
 	</dependencies>
 	<build>
