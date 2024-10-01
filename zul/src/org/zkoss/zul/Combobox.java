@@ -551,7 +551,7 @@ public class Combobox extends Textbox {
 	 */
 	@SuppressWarnings("unchecked")
 	private <T> ComboitemRenderer<T> getRealRenderer() {
-		return _renderer != null ? _renderer : _defRend;
+		return _renderer != null ? (ComboitemRenderer<T>) _renderer : _defRend;
 	}
 
 	/** Used to render comboitem if _model is specified. */
