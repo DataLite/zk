@@ -16,7 +16,7 @@ public abstract class F85_ZK_3681_TestCase extends WebDriverTestCase {
 	protected WebDriver getWebDriver() {
 		if (driver == null) {
 			// Vue.js doesn't support IE8 (Default setting)
-			driver = new ZKWebDriver(BrowserVersion.INTERNET_EXPLORER_11, true);
+			driver = new ZKWebDriver(BrowserVersion.INTERNET_EXPLORER, true);
 		}
 		return driver;
 	}

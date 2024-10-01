@@ -16,11 +16,6 @@ import static org.junit.Assert.*;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-
-import org.omg.CORBA.UNKNOWN;
-import org.zkoss.json.JSONArray;
-import org.zkoss.json.JSONObject;
-import org.zkoss.json.JSONValue;
 import org.zkoss.zk.ui.AbstractComponent;
 import org.zkoss.zk.ui.Component;
 import org.zkoss.zk.ui.HtmlShadowElement;

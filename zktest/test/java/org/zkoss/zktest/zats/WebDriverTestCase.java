@@ -15,6 +15,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 
 import com.gargoylesoftware.htmlunit.BrowserVersion;
 import com.gargoylesoftware.htmlunit.Page;
@@ -103,7 +104,7 @@ public abstract class WebDriverTestCase {
 		}
 
 		public Page lastPage() {
-			return super.lastPage();
+			return super.getCurrentWindow().lastPage();
 		}
 
 	}
@@ -372,7 +373,7 @@ public abstract class WebDriverTestCase {
 	 */
 	protected void waitFor(ClientWidget locator, int timeoutInSeconds) {
 		WebDriverWait wait = new WebDriverWait(getWebDriver(),
-				timeoutInSeconds);
+				Duration.ofSeconds(timeoutInSeconds));
 		wait.until(ExpectedConditions.visibilityOfElementLocated(locator));
 	}
 
