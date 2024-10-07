@@ -123,7 +123,8 @@ public class Registry {
 						sign = sign.substring(0, 9);
 				}
 
-				wapp.setAttribute(key, gen(Strings.toString(Registry.PREFS_2), sign));
+				// SPM-7575: checksum nepotrebujeme (Your ZK binary is being altered and may not work as expected. Please contact us at info@zkoss.org for assistance)
+				//wapp.setAttribute(key, gen(Strings.toString(Registry.PREFS_2), sign));
 				return; // done
 			}
 		}
