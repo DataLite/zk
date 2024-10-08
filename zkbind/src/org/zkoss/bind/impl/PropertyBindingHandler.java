@@ -28,6 +28,7 @@ import org.zkoss.bind.BindContext;
 import org.zkoss.bind.Phase;
 import org.zkoss.bind.Property;
 import org.zkoss.bind.ValidationContext;
+import org.zkoss.bind.Validator;
 import org.zkoss.bind.sys.Binding;
 import org.zkoss.bind.sys.InitPropertyBinding;
 import org.zkoss.bind.sys.LoadPropertyBinding;
@@ -177,8 +178,11 @@ import org.zkoss.zk.ui.event.Event;
 
 	//validate a prompt save property binding
 	private boolean doValidateSaveEvent(Component comp, SavePropertyBinding binding, Event evt, Set<Property> notifys) {
+		// try to get bean validator
+		final Validator beanValidator = ( Validator ) comp.getAttribute( "dlBeanValidator", true );
+
 		//for a single binding, if it doesn't need to do validation, then we don't need to anything.
-		if (binding.hasValidator()) {
+		if (binding.hasValidator() || beanValidator != null) {
 			final BindContext ctx = BindContextUtil.newBindContext(_binder, binding, true, null, binding.getComponent(),
 					evt);
 			BindContextUtil.setConverterArgs(_binder, binding.getComponent(), ctx, binding);
@@ -195,12 +199,26 @@ import org.zkoss.zk.ui.event.Event;
 					throw new UiException("no main property for save-binding " + binding);
 				}
 
+				ValidationContext vctx = new ValidationContextImpl(null, p, toCollectedProperties(p), ctx, true);
+
 				//clear previous message before validation
-				if (((BinderImpl) binding.getBinder()).hasValidator(binding.getComponent(), binding.getFieldName())) {
+				//if (((BinderImpl) binding.getBinder()).hasValidator(binding.getComponent(), binding.getFieldName())) {
 					clearValidationMessages(binding.getBinder(), binding.getComponent(), binding.getFieldName());
+				//}
+
+				// ValidationContext vctx = new ValidationContextImpl(null, p, toCollectedProperties(p), ctx, true);
+				// perform standard ZK validation
+				if ( binding.hasValidator() ) {
+					binding.validate(vctx);
 				}
 
-				ValidationContext vctx = new ValidationContextImpl(null, p, toCollectedProperties(p), ctx, true);
+				// perform bean validation
+				if ( beanValidator != null ) {
+					beanValidator.validate( vctx );
+				}
+
+				// finish validation process
+
 				binding.validate(vctx);
 				boolean valid = vctx.isValid();
 				if (_log.isDebugEnabled()) {

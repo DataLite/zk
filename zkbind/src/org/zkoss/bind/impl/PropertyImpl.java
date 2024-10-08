@@ -25,7 +25,7 @@ public class PropertyImpl implements Property, Serializable {
 	private static final long serialVersionUID = 1463169907348730644L;
 	private final Object _base;
 	private final String _property;
-	private final Object _value;
+	private Object _value;
 
 	public PropertyImpl(Object base, String property, Object value) {
 		_base = base;
@@ -86,4 +86,7 @@ public class PropertyImpl implements Property, Serializable {
 		return true;
 	}
 
+	public void set_value(Object _value) {
+		this._value = _value;
+	}
 }
