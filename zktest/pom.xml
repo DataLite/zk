@@ -62,9 +62,9 @@
 		<repository>
 			<id>ZK EE Evaluation</id>
 			<url>http://mavensync.zkoss.org/zk/ee-eval</url>
-		</repository>		
+		</repository>
 	</repositories>
-	
+
 	<pluginRepositories>
 		<pluginRepository>
 			<id>zkmaven</id>
@@ -299,7 +299,7 @@
 					<warSourceDirectory>${project.basedir}/src/archive/</warSourceDirectory>
 				</configuration>
 			</plugin>
-			<plugin>
+						<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.7.0</version>
@@ -307,6 +307,18 @@
 					<source>21</source>
 					<target>21</target>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>3.2.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
             <plugin>
                 <groupId>org.eclipse.jetty</groupId>
@@ -355,17 +367,15 @@
 		</plugins>
 	</build>
 
-	<distributionManagement>
-		<repository>
-			<id>DataLite</id>
-			<name>DataLite-releases</name>
-			<url>http://zealot.datalite.cz:8081/artifactory/libs-releases-local</url>
-		</repository>
 
-		<snapshotRepository>
-			<id>DataLite</id>
-			<name>DataLite-snapshots</name>
-			<url>http://zealot.datalite.cz:8081/artifactory/libs-snapshots-local</url>
-		</snapshotRepository>
-	</distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>datalite</id>
+            <url>https://nexus.datalite.cloud/repository/libs-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>datalite</id>
+            <url>https://nexus.datalite.cloud/repository/libs-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>

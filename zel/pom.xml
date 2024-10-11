@@ -45,14 +45,15 @@
 				<picUrl>http://www.zkoss.org</picUrl>
 			</properties>
 		</developer>
-	</developers>	
+	</developers>
 
-	<repositories>
-		<repository>
-			<id>zk repository</id>
-			<url>http://mavensync.zkoss.org/maven2</url>
-		</repository>
-	</repositories>
+
+    <repositories>
+        <repository>
+            <id>datalite</id>
+            <url>https://nexus.datalite.cloud/repository/libs/</url>
+        </repository>
+    </repositories>
 
 	<pluginRepositories>
 		<pluginRepository>
@@ -105,7 +106,7 @@
 			</resource>
 		</resources>
 		<plugins>
-			<plugin>
+						<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.7.0</version>
@@ -114,20 +115,30 @@
 					<target>21</target>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>3.2.1</version>
+				<executions>
+					<execution>
+						<goals>
+							<goal>jar</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 		</plugins>
 	</build>
 
-	<distributionManagement>
-		<repository>
-			<id>DataLite</id>
-			<name>DataLite-releases</name>
-			<url>http://zealot.datalite.cz:8081/artifactory/libs-releases-local</url>
-		</repository>
 
-		<snapshotRepository>
-			<id>DataLite</id>
-			<name>DataLite-snapshots</name>
-			<url>http://zealot.datalite.cz:8081/artifactory/libs-snapshots-local</url>
-		</snapshotRepository>
-	</distributionManagement>
-</project> 
+    <distributionManagement>
+        <repository>
+            <id>datalite</id>
+            <url>https://nexus.datalite.cloud/repository/libs-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>datalite</id>
+            <url>https://nexus.datalite.cloud/repository/libs-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
+</project>

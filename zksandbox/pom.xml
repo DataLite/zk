@@ -117,7 +117,7 @@
 			<artifactId>zul</artifactId>
 			<version>${project.version}</version>
 		</dependency>
-		<!--  
+		<!--
 		<dependency>
 			<groupId>org.zkoss.theme</groupId>
 			<artifactId>classicblue</artifactId>
@@ -195,17 +195,15 @@
 		</plugins>
 	</build>
 
-	<distributionManagement>
-		<repository>
-			<id>DataLite</id>
-			<name>DataLite-releases</name>
-			<url>http://zealot.datalite.cz:8081/artifactory/libs-releases-local</url>
-		</repository>
 
-		<snapshotRepository>
-			<id>DataLite</id>
-			<name>DataLite-snapshots</name>
-			<url>http://zealot.datalite.cz:8081/artifactory/libs-snapshots-local</url>
-		</snapshotRepository>
-	</distributionManagement>
+    <distributionManagement>
+        <repository>
+            <id>datalite</id>
+            <url>https://nexus.datalite.cloud/repository/libs-releases/</url>
+        </repository>
+        <snapshotRepository>
+            <id>datalite</id>
+            <url>https://nexus.datalite.cloud/repository/libs-snapshots/</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>
