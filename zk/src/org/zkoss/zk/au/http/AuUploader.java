@@ -375,10 +375,14 @@ public class AuUploader implements AuExtension {
 		int thrs = conf.getFileSizeThreshold();
 		int sizeThreadHold = 1024 * 128; // maximum size that will be stored in memory
 
-		if (thrs > 0)
+		if (thrs > 0) {
 			sizeThreadHold = 1024 * thrs;
+		}
 
-		File repository = null;
+		params.put("sizeThreadHold", sizeThreadHold);
+
+		ServletContext context = desktop.getWebApp().getServletContext();
+		File repository = (File) context.getAttribute("jakarta.servlet.context.tempdir");
 
 		if (conf.getFileRepository() != null) {
 			repository = new File(conf.getFileRepository());
@@ -386,6 +390,8 @@ public class AuUploader implements AuExtension {
 				log.warn("The file repository is not a directory! [" + repository + "]");
 			}
 		}
+
+		params.put("repository", repository);
 
 		org.zkoss.zk.ui.sys.DiskFileItemFactory dfiFactory = null;
 		if (conf.getFileItemFactoryClass() != null) {
